@@ -1,15 +1,22 @@
 import { createPost } from '@/src/application/use-cases/community/create-post';
+import { autoTagPost } from '@/src/application/use-cases/tags/auto-tag-post';
 import { normalizePostType } from '@/src/domain/entities/post';
 import { PgCommunityRepository } from '@/src/infrastructure/repositories/pg-community-repository';
+import { PgTagRepository } from '@/src/infrastructure/repositories/pg-tag-repository';
 import { requireUserId } from '@/src/interfaces/http/auth';
-import { badRequest } from '@/src/interfaces/http/response';
+import { checkRateLimit } from '@/src/interfaces/http/rate-limiter';
+import { badRequest, unauthorized, tooManyRequests } from '@/src/interfaces/http/response';
 import { NextRequest, NextResponse } from 'next/server';
 
 const repo = new PgCommunityRepository();
+const tagRepo = new PgTagRepository();
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = requireUserId(request);
+    const userId = await requireUserId();
+    if (!checkRateLimit(userId, 'posts')) {
+      return tooManyRequests('Too many posts. Try again later.');
+    }
     const body = await request.json();
     const created = await createPost(repo, {
       authorId: userId,
@@ -23,8 +30,13 @@ export async function POST(request: NextRequest) {
       metroArea: body.metroArea ?? null,
     });
 
+    // Auto-tag in background (non-blocking)
+    autoTagPost(tagRepo, created.id, body.title, body.body).catch(() => {});
+
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    return badRequest(error instanceof Error ? error.message : 'Invalid request');
+    const message = error instanceof Error ? error.message : 'Invalid request';
+    if (message === 'Not authenticated') return unauthorized(message);
+    return badRequest(message);
   }
 }

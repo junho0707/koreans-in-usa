@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PostCard } from '@/src/components/post/post-card';
 
 type FeedItem = {
   id: number;
@@ -10,6 +11,8 @@ type FeedItem = {
   createdAt: string;
   regionId: string | null;
   type: string;
+  commentCount?: number;
+  tags?: string[];
 };
 
 type FeedResponse = {
@@ -64,20 +67,24 @@ export function FeedList({ endpoint }: { endpoint: string }) {
   }, [cursor, load]);
 
   return (
-    <div style={{ display: 'grid', gap: 12 }}>
+    <div className="grid gap-3">
       {items.map((item) => (
-        <article key={item.id} style={{ border: '1px solid #ddd', padding: 12, borderRadius: 8 }}>
-          <h3>{item.title}</h3>
-          <p>{item.body}</p>
-          <small>
-            {item.type} · score {item.score} · {new Date(item.createdAt).toLocaleString()}
-            {item.regionId ? ` · ${item.regionId}` : ''}
-          </small>
-        </article>
+        <PostCard
+          key={item.id}
+          id={item.id}
+          title={item.title}
+          body={item.body}
+          type={item.type}
+          score={item.score}
+          commentCount={item.commentCount}
+          regionId={item.regionId}
+          tags={item.tags}
+          createdAt={item.createdAt}
+        />
       ))}
       <div ref={sentinelRef} />
-      {loading && <p>Loading...</p>}
-      {!cursor && hasLoaded && <p>No more posts.</p>}
+      {loading && <p className="text-center text-sm text-gray-500">Loading...</p>}
+      {!cursor && hasLoaded && <p className="text-center text-sm text-gray-500">No more posts.</p>}
     </div>
   );
 }
