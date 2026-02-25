@@ -1,9 +1,17 @@
 'use client';
 
-import { useAuth } from '@/src/components/providers/auth-context';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+
+type PublicUser = {
+  id: number;
+  displayName: string;
+  profileState: string | null;
+  city: string | null;
+  interests: string[];
+  koreanXIdentity: string | null;
+  createdAt: string;
+};
 
 type PostItem = {
   id: number;
@@ -23,19 +31,29 @@ type CommentItem = {
   createdAt: string;
 };
 
-export default function ProfilePage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [tab, setTab] = useState<'info' | 'posts' | 'comments'>('info');
+export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [user, setUser] = useState<PublicUser | null>(null);
+  const [tab, setTab] = useState<'posts' | 'comments'>('posts');
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [postsCursor, setPostsCursor] = useState<number | null>(null);
   const [commentsCursor, setCommentsCursor] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/users/${id}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setUser)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   useEffect(() => {
     if (!user) return;
     if (tab === 'posts' && posts.length === 0) {
-      fetch(`/api/users/${user.id}/posts`)
+      fetch(`/api/users/${id}/posts`)
         .then((r) => r.json())
         .then((data) => {
           setPosts(data.items);
@@ -43,27 +61,18 @@ export default function ProfilePage() {
         });
     }
     if (tab === 'comments' && comments.length === 0) {
-      fetch(`/api/users/${user.id}/comments`)
+      fetch(`/api/users/${id}/comments`)
         .then((r) => r.json())
         .then((data) => {
           setComments(data.items);
           setCommentsCursor(data.nextCursor);
         });
     }
-  }, [user, tab, posts.length, comments.length]);
-
-  if (loading) {
-    return <div className="mx-auto max-w-lg px-4 py-16">Loading...</div>;
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  }, [user, tab, id, posts.length, comments.length]);
 
   function loadMorePosts() {
-    if (!postsCursor || !user) return;
-    fetch(`/api/users/${user.id}/posts?cursor=${postsCursor}`)
+    if (!postsCursor) return;
+    fetch(`/api/users/${id}/posts?cursor=${postsCursor}`)
       .then((r) => r.json())
       .then((data) => {
         setPosts((prev) => [...prev, ...data.items]);
@@ -72,8 +81,8 @@ export default function ProfilePage() {
   }
 
   function loadMoreComments() {
-    if (!commentsCursor || !user) return;
-    fetch(`/api/users/${user.id}/comments?cursor=${commentsCursor}`)
+    if (!commentsCursor) return;
+    fetch(`/api/users/${id}/comments?cursor=${commentsCursor}`)
       .then((r) => r.json())
       .then((data) => {
         setComments((prev) => [...prev, ...data.items]);
@@ -81,58 +90,62 @@ export default function ProfilePage() {
       });
   }
 
+  if (loading) return <div className="mx-auto max-w-2xl px-4 py-16">Loading...</div>;
+  if (error || !user) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16">
+        <h1 className="text-xl font-bold">User not found</h1>
+        <Link href="/" className="mt-4 inline-block text-sm text-blue-600 hover:underline">Back to feed</Link>
+      </div>
+    );
+  }
+
+  const joined = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
   return (
-    <main className="mx-auto max-w-lg px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Profile</h1>
-        <Link
-          href="/profile/edit"
-          className="rounded-lg bg-foreground px-4 py-2 text-sm text-background"
-        >
-          Edit
-        </Link>
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">{user.displayName}</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Joined {joined}
+          {user.city && user.profileState && ` · ${user.city}, ${user.profileState}`}
+          {!user.city && user.profileState && ` · ${user.profileState}`}
+        </p>
+        {user.koreanXIdentity && (
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{user.koreanXIdentity}</p>
+        )}
+        {user.interests.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {user.interests.map((interest) => (
+              <span key={interest} className="rounded-full bg-gray-100 px-3 py-1 text-xs dark:bg-gray-800">
+                {interest}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
-      <div className="mt-6 flex border-b dark:border-gray-700">
-        {(['info', 'posts', 'comments'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium capitalize ${tab === t ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
-          >
-            {t === 'info' ? 'Profile' : t}
-          </button>
-        ))}
+      <div className="flex border-b dark:border-gray-700">
+        <button
+          onClick={() => setTab('posts')}
+          className={`px-4 py-2 text-sm font-medium ${tab === 'posts' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
+        >
+          Posts
+        </button>
+        <button
+          onClick={() => setTab('comments')}
+          className={`px-4 py-2 text-sm font-medium ${tab === 'comments' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
+        >
+          Comments
+        </button>
       </div>
-
-      {/* Info tab */}
-      {tab === 'info' && (
-        <div className="mt-6 space-y-4">
-          <div>
-            <span className="text-sm text-gray-500">Display Name</span>
-            <p className="font-medium">{user.displayName}</p>
-          </div>
-          {user.email && (
-            <div>
-              <span className="text-sm text-gray-500">Email</span>
-              <p>{user.email}</p>
-            </div>
-          )}
-          {user.phone && (
-            <div>
-              <span className="text-sm text-gray-500">Phone</span>
-              <p>{user.phone}</p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Posts tab */}
       {tab === 'posts' && (
         <div className="mt-4 space-y-3">
           {posts.length === 0 ? (
-            <p className="text-sm text-gray-500">You haven&apos;t posted anything yet.</p>
+            <p className="text-sm text-gray-500">No posts yet.</p>
           ) : (
             posts.map((post) => (
               <Link
@@ -164,7 +177,7 @@ export default function ProfilePage() {
       {tab === 'comments' && (
         <div className="mt-4 space-y-3">
           {comments.length === 0 ? (
-            <p className="text-sm text-gray-500">You haven&apos;t commented yet.</p>
+            <p className="text-sm text-gray-500">No comments yet.</p>
           ) : (
             comments.map((comment) => (
               <Link

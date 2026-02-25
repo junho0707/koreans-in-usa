@@ -2,6 +2,8 @@ import {
   CreateFromAuthInput,
   UpdateProfileInput,
   UserRepository,
+  UserPostSummary,
+  UserCommentSummary,
 } from '@/src/application/ports/user-repository';
 import { User } from '@/src/domain/entities/user';
 import { pool } from '@/src/lib/db';
@@ -115,5 +117,88 @@ export class PgUserRepository implements UserRepository {
 
     if (!rows[0]) throw new Error('User not found');
     return toUser(rows[0]);
+  }
+
+  async getPostsByUser(userId: number, cursor?: number, limit = 20): Promise<{ items: UserPostSummary[]; nextCursor: number | null }> {
+    const safeLimit = Math.min(limit, 50);
+    const conditions = ['p.author_id = $1', 'p.is_hidden = FALSE'];
+    const values: unknown[] = [userId];
+    let idx = 2;
+
+    if (cursor) {
+      conditions.push(`p.id < $${idx++}`);
+      values.push(cursor);
+    }
+
+    values.push(safeLimit + 1);
+
+    const sql = `
+      SELECT p.id, p.title, p.type, p.created_at,
+        COALESCE(vs.score, 0)::int AS score,
+        COALESCE(cc.cnt, 0)::int AS comment_count
+      FROM posts p
+      LEFT JOIN (SELECT target_id, COUNT(*)::int AS score FROM votes WHERE target_type = 'POST' GROUP BY target_id) vs ON vs.target_id = p.id
+      LEFT JOIN (SELECT post_id, COUNT(*)::int AS cnt FROM comments GROUP BY post_id) cc ON cc.post_id = p.id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY p.created_at DESC, p.id DESC
+      LIMIT $${idx}
+    `;
+
+    const { rows } = await pool.query(sql, values);
+    const hasMore = rows.length > safeLimit;
+    const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
+
+    const items: UserPostSummary[] = resultRows.map((r: Record<string, unknown>) => ({
+      id: Number(r.id),
+      title: String(r.title),
+      type: String(r.type),
+      score: Number(r.score),
+      commentCount: Number(r.comment_count),
+      createdAt: String(r.created_at),
+    }));
+
+    const last = items[items.length - 1];
+    return { items, nextCursor: hasMore && last ? last.id : null };
+  }
+
+  async getCommentsByUser(userId: number, cursor?: number, limit = 20): Promise<{ items: UserCommentSummary[]; nextCursor: number | null }> {
+    const safeLimit = Math.min(limit, 50);
+    const conditions = ['c.author_id = $1', 'c.is_hidden = FALSE'];
+    const values: unknown[] = [userId];
+    let idx = 2;
+
+    if (cursor) {
+      conditions.push(`c.id < $${idx++}`);
+      values.push(cursor);
+    }
+
+    values.push(safeLimit + 1);
+
+    const sql = `
+      SELECT c.id, c.post_id, p.title AS post_title, c.body, c.created_at,
+        COALESCE(vs.score, 0)::int AS score
+      FROM comments c
+      JOIN posts p ON p.id = c.post_id
+      LEFT JOIN (SELECT target_id, COUNT(*)::int AS score FROM votes WHERE target_type = 'COMMENT' GROUP BY target_id) vs ON vs.target_id = c.id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY c.created_at DESC, c.id DESC
+      LIMIT $${idx}
+    `;
+
+    const { rows } = await pool.query(sql, values);
+    const hasMore = rows.length > safeLimit;
+    const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
+
+    const items: UserCommentSummary[] = resultRows.map((r: Record<string, unknown>) => ({
+      id: Number(r.id),
+      postId: Number(r.post_id),
+      postTitle: String(r.post_title),
+      body: String(r.body),
+      score: Number(r.score),
+      createdAt: String(r.created_at),
+    }));
+
+    const last = items[items.length - 1];
+    return { items, nextCursor: hasMore && last ? last.id : null };
   }
 }

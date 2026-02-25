@@ -16,9 +16,29 @@ export type UpdateProfileInput = {
   koreanXIdentity?: string | null;
 };
 
+export type UserPostSummary = {
+  id: number;
+  title: string;
+  type: string;
+  score: number;
+  commentCount: number;
+  createdAt: string;
+};
+
+export type UserCommentSummary = {
+  id: number;
+  postId: number;
+  postTitle: string;
+  body: string;
+  score: number;
+  createdAt: string;
+};
+
 export interface UserRepository {
   findBySupabaseUid(uid: string): Promise<User | null>;
   findById(id: number): Promise<User | null>;
   createFromAuth(input: CreateFromAuthInput): Promise<User>;
   updateProfile(id: number, input: UpdateProfileInput): Promise<User>;
+  getPostsByUser(userId: number, cursor?: number, limit?: number): Promise<{ items: UserPostSummary[]; nextCursor: number | null }>;
+  getCommentsByUser(userId: number, cursor?: number, limit?: number): Promise<{ items: UserCommentSummary[]; nextCursor: number | null }>;
 }

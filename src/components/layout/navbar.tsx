@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: '/groups/south', label: 'South' },
   { href: '/groups/midwest', label: 'Midwest' },
   { href: '/groups/west', label: 'West' },
+  { href: '/search', label: 'Search' },
 ];
 
 export function Navbar() {
@@ -41,6 +42,12 @@ export function Navbar() {
           ))}
           {loading ? null : user ? (
             <div className="flex items-center gap-3">
+              <Link
+                href="/bookmarks"
+                className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
+              >
+                Saved
+              </Link>
               <Link
                 href="/profile"
                 className="text-sm font-medium"
@@ -96,6 +103,9 @@ export function Navbar() {
           {!loading && (
             user ? (
               <>
+                <Link href="/bookmarks" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
+                  Saved
+                </Link>
                 <Link href="/profile" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>
                   {user.displayName}
                 </Link>

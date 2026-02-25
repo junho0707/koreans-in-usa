@@ -1,6 +1,8 @@
 'use client';
 
 import { PostDetail } from '@/src/application/dto/post-detail';
+import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
+import Link from 'next/link';
 
 type Props = {
   post: PostDetail;
@@ -35,10 +37,11 @@ export function PostDetailView({ post }: Props) {
       <h1 className="mb-2 text-2xl font-bold">{post.title}</h1>
 
       <div className="mb-4 flex items-center gap-3 text-sm text-gray-500">
-        <span>by {post.authorDisplayName}</span>
+        <Link href={`/users/${post.authorId}`} className="hover:underline">by {post.authorDisplayName}</Link>
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
         <span>{post.score} vote{post.score !== 1 ? 's' : ''}</span>
         <span>{post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}</span>
+        <BookmarkButton postId={post.id} />
       </div>
 
       <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
