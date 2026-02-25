@@ -29,4 +29,7 @@ export interface CommunityRepository {
   createPost(command: CreatePostCommand): Promise<{ id: number }>;
   createComment(command: CreateCommentCommand): Promise<{ id: number }>;
   toggleVote(command: ToggleVoteCommand): Promise<{ active: boolean }>;
+  getPostAuthorId(postId: number): Promise<number | null>;
+  getPostType(postId: number): Promise<string | null>;
+  setAcceptedAnswer(postId: number, commentId: number | null): Promise<void>;
 }

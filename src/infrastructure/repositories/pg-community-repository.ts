@@ -25,7 +25,7 @@ export class PgCommunityRepository implements CommunityRepository {
       ],
     );
 
-    return { id: Number(result.rows[0].id) };
+    return { id: Number((result.rows[0] as { id: number }).id) };
   }
 
   async createComment(input: CreateCommentCommand): Promise<{ id: number }> {
@@ -36,7 +36,7 @@ export class PgCommunityRepository implements CommunityRepository {
       [input.postId, input.authorId, input.parentCommentId ?? null, input.body],
     );
 
-    return { id: Number(result.rows[0].id) };
+    return { id: Number((result.rows[0] as { id: number }).id) };
   }
 
   async toggleVote(input: ToggleVoteCommand): Promise<{ active: boolean }> {
@@ -58,5 +58,28 @@ export class PgCommunityRepository implements CommunityRepository {
     );
 
     return { active: true };
+  }
+
+  async getPostAuthorId(postId: number): Promise<number | null> {
+    const { rows } = await pool.query(
+      'SELECT author_id FROM posts WHERE id = $1',
+      [postId],
+    );
+    return rows[0] ? Number((rows[0] as { author_id: number }).author_id) : null;
+  }
+
+  async getPostType(postId: number): Promise<string | null> {
+    const { rows } = await pool.query(
+      'SELECT type FROM posts WHERE id = $1',
+      [postId],
+    );
+    return rows[0] ? (rows[0] as { type: string }).type : null;
+  }
+
+  async setAcceptedAnswer(postId: number, commentId: number | null): Promise<void> {
+    await pool.query(
+      'UPDATE posts SET accepted_comment_id = $1 WHERE id = $2',
+      [commentId, postId],
+    );
   }
 }

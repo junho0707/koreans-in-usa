@@ -130,9 +130,9 @@ export class PgFeedRepository implements FeedRepository {
         WHERE p.scope_region = TRUE AND p.region_id IS NOT NULL
       ),
       candidate_ids AS (
-        SELECT id FROM recent_posts WHERE scope_usa = TRUE
+        SELECT id FROM recent_posts WHERE scope_usa = TRUE AND is_hidden = FALSE
         UNION
-        SELECT id FROM region_ranked WHERE region_rank <= 3
+        SELECT id FROM region_ranked rr JOIN recent_posts rp ON rp.id = rr.id WHERE region_rank <= 3 AND rp.is_hidden = FALSE
       )
       SELECT p.id,
              p.title,
@@ -192,7 +192,7 @@ export class PgFeedRepository implements FeedRepository {
     const { where, values } = buildCommonFilters(filters, 2);
     queryValues.push(...values);
 
-    const whereSql = [`p.scope_region = TRUE`, `r.slug = $1`, ...where].join(' AND ');
+    const whereSql = [`p.scope_region = TRUE`, `r.slug = $1`, `p.is_hidden = FALSE`, ...where].join(' AND ');
     const recentOnly = sort === 'top12h' ? `AND p.created_at >= NOW() - INTERVAL '12 hours'` : '';
     const orderBy =
       sort === 'new'
