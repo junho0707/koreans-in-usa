@@ -22,23 +22,40 @@ export function FeedList({ endpoint }: { endpoint: string }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
-    const url = new URL(endpoint, window.location.origin);
-    if (cursor) {
-      url.searchParams.set('cursor', cursor);
-    }
+    if (loadingRef.current) return;
 
-    const response = await fetch(url.toString());
-    const data = (await response.json()) as FeedResponse;
-    setItems((prev) => [...prev, ...data.items]);
-    setCursor(data.nextCursor);
-    setHasLoaded(true);
-    setLoading(false);
-  }, [cursor, endpoint, loading]);
+    loadingRef.current = true;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const url = new URL(endpoint, window.location.origin);
+      if (cursor) {
+        url.searchParams.set('cursor', cursor);
+      }
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(`Feed request failed (${response.status})`);
+      }
+
+      const data = (await response.json()) as FeedResponse;
+      setItems((prev) => [...prev, ...data.items]);
+      setCursor(data.nextCursor);
+      setHasLoaded(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown feed error');
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+    }
+  }, [cursor, endpoint]);
 
   useEffect(() => {
     if (hasLoaded) return;
@@ -54,7 +71,7 @@ export function FeedList({ endpoint }: { endpoint: string }) {
 
     const observer = new IntersectionObserver((entries) => {
       const [entry] = entries;
-      if (entry.isIntersecting && cursor) {
+      if (entry.isIntersecting && cursor && !loadingRef.current) {
         void load();
       }
     });
@@ -75,9 +92,11 @@ export function FeedList({ endpoint }: { endpoint: string }) {
           </small>
         </article>
       ))}
+
+      {error && <p role="alert">{error}</p>}
       <div ref={sentinelRef} />
       {loading && <p>Loading...</p>}
-      {!cursor && hasLoaded && <p>No more posts.</p>}
+      {!cursor && hasLoaded && !loading && <p>No more posts.</p>}
     </div>
   );
 }

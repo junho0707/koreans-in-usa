@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "db:migrate": "node-pg-migrate up --migrations-dir db/migrations",
     "db:rollback": "node-pg-migrate down --migrations-dir db/migrations -c 1",
-    "db:reset": "npm run db:rollback -- --all && npm run db:migrate"
+    "db:reset": "node-pg-migrate down --migrations-dir db/migrations --all && npm run db:migrate"
   },
   "dependencies": {
     "next": "16.1.6",
