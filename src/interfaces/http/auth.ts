@@ -1,15 +1,22 @@
-import { NextRequest } from 'next/server';
+import { getOrCreateUser } from '@/src/application/use-cases/user/get-or-create-user';
+import { PgUserRepository } from '@/src/infrastructure/repositories/pg-user-repository';
+import { createSupabaseServerClient } from '@/src/lib/supabase/server';
 
-export function requireUserId(request: NextRequest): number {
-  const header = request.headers.get('x-user-id');
-  if (!header) {
-    throw new Error('Missing x-user-id header');
+const userRepo = new PgUserRepository();
+
+export async function requireUserId(): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Not authenticated');
   }
 
-  const parsed = Number(header);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error('Invalid x-user-id header');
-  }
+  const appUser = await getOrCreateUser(userRepo, {
+    supabaseUid: user.id,
+    email: user.email ?? null,
+    phone: user.phone ?? null,
+  });
 
-  return parsed;
+  return appUser.id;
 }
