@@ -8,7 +8,7 @@ import { pool } from '@/src/lib/db';
 
 export class PgCommunityRepository implements CommunityRepository {
   async createPost(input: CreatePostCommand): Promise<{ id: number }> {
-    const result = await pool.query<{ id: number | string }>(
+    const result = await pool.query(
       `INSERT INTO posts (author_id, type, title, body, scope_usa, scope_region, region_id, state_code, metro_area)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        RETURNING id`,
@@ -29,7 +29,7 @@ export class PgCommunityRepository implements CommunityRepository {
   }
 
   async createComment(input: CreateCommentCommand): Promise<{ id: number }> {
-    const result = await pool.query<{ id: number | string }>(
+    const result = await pool.query(
       `INSERT INTO comments (post_id, author_id, parent_comment_id, body)
        VALUES ($1,$2,$3,$4)
        RETURNING id`,

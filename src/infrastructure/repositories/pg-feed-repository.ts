@@ -1,10 +1,14 @@
 import { FeedRepository } from '@/src/application/ports/feed-repository';
 import { FeedItem } from '@/src/domain/entities/feed-item';
 import { FeedFilters, FeedPage, normalizeLimit } from '@/src/domain/feed';
-import { decodeFeedCursor, encodeFeedCursor } from '@/src/domain/value-objects/feed-cursor';
+import {
+  decodeFeedCursor,
+  encodeFeedCursor,
+  isAfterCursor,
+} from '@/src/domain/value-objects/feed-cursor';
 import { pool } from '@/src/lib/db';
 
-type QueryParts = { where: string[]; values: unknown[]; nextIndex: number };
+type QueryParts = { where: string[]; values: unknown[] };
 
 type FeedRow = {
   id: string | number;
@@ -27,28 +31,23 @@ function buildCommonFilters(filters: FeedFilters, startIndex = 1): QueryParts {
   let idx = startIndex;
 
   if (filters.state) {
-    where.push(`state_code = $${idx++}`);
+    where.push(`p.state_code = $${idx++}`);
     values.push(filters.state);
   }
 
   if (filters.type) {
-    where.push(`type = $${idx++}`);
+    where.push(`p.type = $${idx++}`);
     values.push(filters.type.toUpperCase());
   }
 
   if (filters.topic) {
     where.push(
-      `EXISTS (
-        SELECT 1
-        FROM post_topic_tags ptt
-        JOIN topic_tags tt ON tt.id = ptt.topic_tag_id
-        WHERE ptt.post_id = id AND tt.slug = $${idx++}
-      )`,
+      `EXISTS (SELECT 1 FROM post_topic_tags ptt JOIN topic_tags tt ON tt.id = ptt.topic_tag_id WHERE ptt.post_id = p.id AND tt.slug = $${idx++})`,
     );
     values.push(filters.topic);
   }
 
-  return { where, values, nextIndex: idx };
+  return { where, values };
 }
 
 function toFeedItem(row: FeedRow): FeedItem {
@@ -68,82 +67,43 @@ function toFeedItem(row: FeedRow): FeedItem {
   };
 }
 
-function toPage(items: FeedItem[], limit: number): FeedPage {
-  const pageItems = items.slice(0, limit);
-  const hasMore = items.length > limit;
+function toPage(rows: FeedRow[], sort: FeedFilters['sort']): FeedPage {
+  const items = rows.map(toFeedItem);
+  const last = items.at(-1);
 
-  if (!hasMore || pageItems.length === 0) {
-    return { items: pageItems, nextCursor: null };
+  if (!last) {
+    return { items, nextCursor: null };
   }
 
-  const last = pageItems[pageItems.length - 1];
+  const cursorScore = sort === 'new' ? 0 : last.score;
   return {
-    items: pageItems,
+    items,
     nextCursor: encodeFeedCursor({
-      score: last.score,
+      score: cursorScore,
       createdAt: last.createdAt,
       id: last.id,
     }),
   };
 }
 
-function buildCursorWhere(sort: 'new' | 'top12h', nextIndex: number): string {
-  if (sort === 'new') {
-    return `AND (created_at, id) < ($${nextIndex}::timestamptz, $${nextIndex + 1}::bigint)`;
-  }
-
-  return `AND (score, created_at, id) < ($${nextIndex}::bigint, $${nextIndex + 1}::timestamptz, $${nextIndex + 2}::bigint)`;
-}
-
-function pushCursorParams(
-  values: unknown[],
-  sort: 'new' | 'top12h',
-  cursor: { score: number; createdAt: string; id: number },
-): number {
-  if (sort === 'new') {
-    values.push(cursor.createdAt, cursor.id);
-    return 2;
-  }
-
-  values.push(cursor.score, cursor.createdAt, cursor.id);
-  return 3;
-}
-
-function whereLines(clauses: string[]): string {
-  if (clauses.length === 0) {
-    return '';
-  }
-  return clauses.map((clause) => `AND ${clause}`).join('\n');
-}
-
 export class PgFeedRepository implements FeedRepository {
   async getUsaFeed(filters: FeedFilters): Promise<FeedPage> {
     const limit = normalizeLimit(filters.limit);
     const sort = filters.sort ?? 'top12h';
-    const cursor = filters.cursor ? decodeFeedCursor(filters.cursor) : null;
     const queryValues: unknown[] = [];
-
-    const common = buildCommonFilters(filters, 1);
-    queryValues.push(...common.values);
-
-    const feedWhere = [...common.where];
-    let nextIndex = common.nextIndex;
+    const { where, values } = buildCommonFilters(filters, 1);
+    queryValues.push(...values);
 
     if (filters.region) {
-      feedWhere.push(`region_id = $${nextIndex++}`);
+      where.push(`p.region_id = $${queryValues.length + 1}`);
       queryValues.push(filters.region.toUpperCase());
     }
 
-    let cursorWhere = '';
-    if (cursor) {
-      cursorWhere = buildCursorWhere(sort, nextIndex);
-      nextIndex += pushCursorParams(queryValues, sort, cursor);
-    }
-
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const orderBy =
       sort === 'new'
-        ? 'ORDER BY created_at DESC, id DESC'
-        : 'ORDER BY score DESC, created_at DESC, id DESC';
+        ? 'ORDER BY f.created_at DESC, f.id DESC'
+        : 'ORDER BY f.score DESC, f.created_at DESC, f.id DESC';
 
     queryValues.push(limit + 1);
 
@@ -173,64 +133,71 @@ export class PgFeedRepository implements FeedRepository {
         SELECT id FROM recent_posts WHERE scope_usa = TRUE
         UNION
         SELECT id FROM region_ranked WHERE region_rank <= 3
-      ),
-      feed AS (
-        SELECT p.id,
-               p.title,
-               p.body,
-               p.type,
-               p.author_id,
-               p.created_at,
-               p.region_id,
-               p.state_code,
-               p.metro_area,
-               p.scope_usa,
-               p.scope_region,
-               COALESCE(ps.score, 0)::bigint AS score
-        FROM posts p
-        JOIN candidate_ids c ON c.id = p.id
-        LEFT JOIN post_scores ps ON ps.target_id = p.id
       )
-      SELECT *
-      FROM feed
-      WHERE 1=1
-      ${whereLines(feedWhere)}
-      ${cursorWhere}
+      SELECT p.id,
+             p.title,
+             p.body,
+             p.type,
+             p.author_id,
+             p.created_at,
+             p.region_id,
+             p.state_code,
+             p.metro_area,
+             p.scope_usa,
+             p.scope_region,
+             COALESCE(ps.score, 0)::bigint AS score
+      FROM posts p
+      JOIN candidate_ids c ON c.id = p.id
+      LEFT JOIN post_scores ps ON ps.target_id = p.id
+      ${whereSql}
       ${orderBy}
-      LIMIT $${nextIndex};
+      LIMIT $${queryValues.length};
     `;
 
     const { rows } = await pool.query<FeedRow>(sql, queryValues);
-    return toPage(rows.map(toFeedItem), limit);
+    const mapped: FeedItem[] = (rows as FeedRow[]).map(toFeedItem);
+    const cursor = filters.cursor ? decodeFeedCursor(filters.cursor) : null;
+    const filtered = cursor
+      ? mapped.filter((item: FeedItem) =>
+          sort === 'new'
+            ? item.createdAt < cursor.createdAt || (item.createdAt === cursor.createdAt && item.id < cursor.id)
+            : isAfterCursor(item, cursor),
+        )
+      : mapped;
+
+    return toPage(
+      filtered.slice(0, limit).map((item: FeedItem) => ({
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        type: item.type,
+        author_id: item.authorId,
+        created_at: item.createdAt,
+        region_id: item.regionId,
+        state_code: item.stateCode,
+        metro_area: item.metroArea,
+        scope_usa: item.scopeUsa,
+        scope_region: item.scopeRegion,
+        score: item.score,
+      })),
+      sort,
+    );
   }
 
   async getRegionFeed(regionSlug: string, filters: FeedFilters): Promise<FeedPage> {
     const limit = normalizeLimit(filters.limit);
     const sort = filters.sort ?? 'top12h';
-    const cursor = filters.cursor ? decodeFeedCursor(filters.cursor) : null;
     const queryValues: unknown[] = [regionSlug];
 
-    const common = buildCommonFilters(filters, 2);
-    queryValues.push(...common.values);
+    const { where, values } = buildCommonFilters(filters, 2);
+    queryValues.push(...values);
 
-    const where = [...common.where, 'scope_region = TRUE', 'region_id = (SELECT id FROM regions WHERE slug = $1)'];
-
-    if (sort === 'top12h') {
-      where.push(`created_at >= NOW() - INTERVAL '12 hours'`);
-    }
-
-    let nextIndex = common.nextIndex;
-    let cursorWhere = '';
-
-    if (cursor) {
-      cursorWhere = buildCursorWhere(sort, nextIndex);
-      nextIndex += pushCursorParams(queryValues, sort, cursor);
-    }
-
+    const whereSql = [`p.scope_region = TRUE`, `r.slug = $1`, ...where].join(' AND ');
+    const recentOnly = sort === 'top12h' ? `AND p.created_at >= NOW() - INTERVAL '12 hours'` : '';
     const orderBy =
       sort === 'new'
-        ? 'ORDER BY created_at DESC, id DESC'
-        : 'ORDER BY score DESC, created_at DESC, id DESC';
+        ? 'ORDER BY p.created_at DESC, p.id DESC'
+        : 'ORDER BY COALESCE(ps.score, 0) DESC, p.created_at DESC, p.id DESC';
 
     queryValues.push(limit + 1);
 
@@ -240,32 +207,55 @@ export class PgFeedRepository implements FeedRepository {
         FROM votes
         WHERE target_type = 'POST'
         GROUP BY target_id
-      ),
-      scoped_posts AS (
-        SELECT p.id,
-               p.title,
-               p.body,
-               p.type,
-               p.author_id,
-               p.created_at,
-               p.region_id,
-               p.state_code,
-               p.metro_area,
-               p.scope_usa,
-               p.scope_region,
-               COALESCE(ps.score, 0)::bigint AS score
-        FROM posts p
-        LEFT JOIN post_scores ps ON ps.target_id = p.id
       )
-      SELECT *
-      FROM scoped_posts
-      WHERE ${where.join(' AND ')}
-      ${cursorWhere}
+      SELECT p.id,
+             p.title,
+             p.body,
+             p.type,
+             p.author_id,
+             p.created_at,
+             p.region_id,
+             p.state_code,
+             p.metro_area,
+             p.scope_usa,
+             p.scope_region,
+             COALESCE(ps.score, 0)::bigint AS score
+      FROM posts p
+      JOIN regions r ON r.id = p.region_id
+      LEFT JOIN post_scores ps ON ps.target_id = p.id
+      WHERE ${whereSql}
+      ${recentOnly}
       ${orderBy}
-      LIMIT $${nextIndex};
+      LIMIT $${queryValues.length};
     `;
 
     const { rows } = await pool.query<FeedRow>(sql, queryValues);
-    return toPage(rows.map(toFeedItem), limit);
+    const mapped: FeedItem[] = (rows as FeedRow[]).map(toFeedItem);
+    const cursor = filters.cursor ? decodeFeedCursor(filters.cursor) : null;
+    const filtered = cursor
+      ? mapped.filter((item: FeedItem) =>
+          sort === 'new'
+            ? item.createdAt < cursor.createdAt || (item.createdAt === cursor.createdAt && item.id < cursor.id)
+            : isAfterCursor(item, cursor),
+        )
+      : mapped;
+
+    return toPage(
+      filtered.slice(0, limit).map((item: FeedItem) => ({
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        type: item.type,
+        author_id: item.authorId,
+        created_at: item.createdAt,
+        region_id: item.regionId,
+        state_code: item.stateCode,
+        metro_area: item.metroArea,
+        scope_usa: item.scopeUsa,
+        scope_region: item.scopeRegion,
+        score: item.score,
+      })),
+      sort,
+    );
   }
 }

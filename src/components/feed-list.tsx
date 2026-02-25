@@ -17,52 +17,28 @@ type FeedResponse = {
   nextCursor: string | null;
 };
 
-function mergeById(prev: FeedItem[], incoming: FeedItem[]): FeedItem[] {
-  const map = new Map<number, FeedItem>();
-  for (const item of prev) map.set(item.id, item);
-  for (const item of incoming) map.set(item.id, item);
-  return [...map.values()];
-}
-
 export function FeedList({ endpoint }: { endpoint: string }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const loadingRef = useRef(false);
 
   const load = useCallback(async () => {
-    if (loadingRef.current) return;
-
-    loadingRef.current = true;
+    if (loading) return;
     setLoading(true);
-    setError(null);
-
-    try {
-      const url = new URL(endpoint, window.location.origin);
-      if (cursor) {
-        url.searchParams.set('cursor', cursor);
-      }
-
-      const response = await fetch(url.toString());
-      if (!response.ok) {
-        throw new Error(`Feed request failed (${response.status})`);
-      }
-
-      const data = (await response.json()) as FeedResponse;
-      setItems((prev) => mergeById(prev, data.items));
-      setCursor(data.nextCursor);
-      setHasLoaded(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown feed error');
-    } finally {
-      loadingRef.current = false;
-      setLoading(false);
+    const url = new URL(endpoint, window.location.origin);
+    if (cursor) {
+      url.searchParams.set('cursor', cursor);
     }
-  }, [cursor, endpoint]);
+
+    const response = await fetch(url.toString());
+    const data = (await response.json()) as FeedResponse;
+    setItems((prev) => [...prev, ...data.items]);
+    setCursor(data.nextCursor);
+    setHasLoaded(true);
+    setLoading(false);
+  }, [cursor, endpoint, loading]);
 
   useEffect(() => {
     if (hasLoaded) return;
@@ -78,7 +54,7 @@ export function FeedList({ endpoint }: { endpoint: string }) {
 
     const observer = new IntersectionObserver((entries) => {
       const [entry] = entries;
-      if (entry.isIntersecting && cursor && !loadingRef.current) {
+      if (entry.isIntersecting && cursor) {
         void load();
       }
     });
@@ -99,11 +75,9 @@ export function FeedList({ endpoint }: { endpoint: string }) {
           </small>
         </article>
       ))}
-
-      {error && <p role="alert">{error}</p>}
       <div ref={sentinelRef} />
       {loading && <p>Loading...</p>}
-      {!cursor && hasLoaded && !loading && <p>No more posts.</p>}
+      {!cursor && hasLoaded && <p>No more posts.</p>}
     </div>
   );
 }
