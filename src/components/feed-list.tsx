@@ -17,6 +17,13 @@ type FeedResponse = {
   nextCursor: string | null;
 };
 
+function mergeById(prev: FeedItem[], incoming: FeedItem[]): FeedItem[] {
+  const map = new Map<number, FeedItem>();
+  for (const item of prev) map.set(item.id, item);
+  for (const item of incoming) map.set(item.id, item);
+  return [...map.values()];
+}
+
 export function FeedList({ endpoint }: { endpoint: string }) {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -46,7 +53,7 @@ export function FeedList({ endpoint }: { endpoint: string }) {
       }
 
       const data = (await response.json()) as FeedResponse;
-      setItems((prev) => [...prev, ...data.items]);
+      setItems((prev) => mergeById(prev, data.items));
       setCursor(data.nextCursor);
       setHasLoaded(true);
     } catch (err) {

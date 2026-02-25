@@ -99,13 +99,21 @@ function pushCursorParams(
   values: unknown[],
   sort: 'new' | 'top12h',
   cursor: { score: number; createdAt: string; id: number },
-): void {
+): number {
   if (sort === 'new') {
     values.push(cursor.createdAt, cursor.id);
-    return;
+    return 2;
   }
 
   values.push(cursor.score, cursor.createdAt, cursor.id);
+  return 3;
+}
+
+function whereLines(clauses: string[]): string {
+  if (clauses.length === 0) {
+    return '';
+  }
+  return clauses.map((clause) => `AND ${clause}`).join('\n');
 }
 
 export class PgFeedRepository implements FeedRepository {
@@ -129,8 +137,7 @@ export class PgFeedRepository implements FeedRepository {
     let cursorWhere = '';
     if (cursor) {
       cursorWhere = buildCursorWhere(sort, nextIndex);
-      pushCursorParams(queryValues, sort, cursor);
-      nextIndex += sort === 'new' ? 2 : 3;
+      nextIndex += pushCursorParams(queryValues, sort, cursor);
     }
 
     const orderBy =
@@ -187,7 +194,7 @@ export class PgFeedRepository implements FeedRepository {
       SELECT *
       FROM feed
       WHERE 1=1
-      ${feedWhere.map((clause) => `AND ${clause}`).join('\n')}
+      ${whereLines(feedWhere)}
       ${cursorWhere}
       ${orderBy}
       LIMIT $${nextIndex};
@@ -217,8 +224,7 @@ export class PgFeedRepository implements FeedRepository {
 
     if (cursor) {
       cursorWhere = buildCursorWhere(sort, nextIndex);
-      pushCursorParams(queryValues, sort, cursor);
-      nextIndex += sort === 'new' ? 2 : 3;
+      nextIndex += pushCursorParams(queryValues, sort, cursor);
     }
 
     const orderBy =
