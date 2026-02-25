@@ -6,14 +6,6 @@ import {
 } from '@/src/application/ports/community-repository';
 import { pool } from '@/src/lib/db';
 
-function getInsertedId(rows: unknown[]): number {
-  const row = rows[0];
-  if (!row || typeof row !== 'object' || !('id' in row)) {
-    throw new Error('Insert failed: missing id');
-  }
-  return Number((row as { id: number | string }).id);
-}
-
 export class PgCommunityRepository implements CommunityRepository {
   async createPost(input: CreatePostCommand): Promise<{ id: number }> {
     const result = await pool.query(
@@ -33,7 +25,7 @@ export class PgCommunityRepository implements CommunityRepository {
       ],
     );
 
-    return { id: getInsertedId(result.rows as unknown[]) };
+    return { id: Number(result.rows[0].id) };
   }
 
   async createComment(input: CreateCommentCommand): Promise<{ id: number }> {
@@ -44,7 +36,7 @@ export class PgCommunityRepository implements CommunityRepository {
       [input.postId, input.authorId, input.parentCommentId ?? null, input.body],
     );
 
-    return { id: getInsertedId(result.rows as unknown[]) };
+    return { id: Number(result.rows[0].id) };
   }
 
   async toggleVote(input: ToggleVoteCommand): Promise<{ active: boolean }> {
