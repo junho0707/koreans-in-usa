@@ -3,6 +3,8 @@
 import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
 import { ShareButton } from '@/src/components/post/share-button';
+import { SocialShare } from '@/src/components/post/social-share';
+import { TextToSpeech } from '@/src/components/post/text-to-speech';
 import { TableOfContents } from '@/src/components/post/table-of-contents';
 import { ImageGallery } from '@/src/components/ui/image-gallery';
 import { Markdown } from '@/src/components/ui/markdown';
@@ -60,6 +62,7 @@ export function PostDetailView({ post }: Props) {
         )}
         <BookmarkButton postId={post.id} />
         <ShareButton postId={post.id} title={post.title} />
+        <TextToSpeech text={post.body} />
       </div>
 
       {post.imageUrl && (
@@ -67,6 +70,10 @@ export function PostDetailView({ post }: Props) {
           <ImageGallery images={[post.imageUrl]} alt={post.title} />
         </div>
       )}
+
+      <div className="mb-4">
+        <SocialShare postId={post.id} title={post.title} />
+      </div>
 
       <TableOfContents content={post.body} />
       <Markdown content={post.body} />
