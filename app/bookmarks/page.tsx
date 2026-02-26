@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { EmptyState } from '@/src/components/ui/empty-state';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -58,7 +59,12 @@ export default function BookmarksPage() {
       <h1 className="mb-6 text-2xl font-bold">Saved Posts</h1>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">No saved posts yet. Bookmark posts to see them here.</p>
+        <EmptyState
+          title="No saved posts"
+          description="Bookmark posts you want to read later. They'll appear here."
+          actionLabel="Browse feed"
+          actionHref="/"
+        />
       ) : (
         <div className="space-y-3">
           {items.map((item) => (

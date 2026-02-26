@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import { relativeTime } from '@/src/lib/relative-time';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -95,7 +97,10 @@ export default function NotificationsPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">No notifications yet.</p>
+        <EmptyState
+          title="No notifications"
+          description="When someone interacts with your posts or follows you, you'll see it here."
+        />
       ) : (
         <div className="space-y-1">
           {items.map((n) => (
@@ -113,8 +118,8 @@ export default function NotificationsPage() {
               {n.postTitle && (
                 <p className="mt-0.5 text-xs text-gray-500 truncate">{n.postTitle}</p>
               )}
-              <p className="mt-1 text-xs text-gray-400">
-                {new Date(n.createdAt).toLocaleString()}
+              <p className="mt-1 text-xs text-gray-400" title={new Date(n.createdAt).toLocaleString()}>
+                {relativeTime(n.createdAt)}
               </p>
             </Link>
           ))}

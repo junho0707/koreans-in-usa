@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { EmptyState } from '@/src/components/ui/empty-state';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -36,7 +37,12 @@ export default function MessagesPage() {
       <h1 className="mb-6 text-2xl font-bold">Messages</h1>
 
       {conversations.length === 0 ? (
-        <p className="text-gray-500">No conversations yet.</p>
+        <EmptyState
+          title="No messages"
+          description="Start a conversation by visiting someone's profile and clicking 'Message'."
+          actionLabel="Browse community"
+          actionHref="/"
+        />
       ) : (
         <div className="space-y-1">
           {conversations.map((c) => (
