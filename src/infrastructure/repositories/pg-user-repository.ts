@@ -205,4 +205,11 @@ export class PgUserRepository implements UserRepository {
     const last = items[items.length - 1];
     return { items, nextCursor: hasMore && last ? last.id : null };
   }
+
+  async deactivate(userId: number): Promise<void> {
+    await pool.query(
+      `UPDATE users SET is_active = FALSE, display_name = 'Deleted User', email = NULL, phone = NULL WHERE id = $1`,
+      [userId],
+    );
+  }
 }

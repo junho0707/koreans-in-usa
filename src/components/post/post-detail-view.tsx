@@ -4,6 +4,7 @@ import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
 import { ShareButton } from '@/src/components/post/share-button';
 import { Markdown } from '@/src/components/ui/markdown';
+import { relativeTime } from '@/src/lib/relative-time';
 import Link from 'next/link';
 
 type Props = {
@@ -40,7 +41,7 @@ export function PostDetailView({ post }: Props) {
 
       <div className="mb-4 flex items-center gap-3 text-sm text-gray-500">
         <Link href={`/users/${post.authorId}`} className="hover:underline">by {post.authorDisplayName}</Link>
-        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+        <span title={new Date(post.createdAt).toLocaleString()}>{relativeTime(post.createdAt)}</span>
         <span>{post.score} vote{post.score !== 1 ? 's' : ''}</span>
         <span>{post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}</span>
         <BookmarkButton postId={post.id} />

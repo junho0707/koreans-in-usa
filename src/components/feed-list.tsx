@@ -13,6 +13,8 @@ type FeedItem = {
   type: string;
   commentCount?: number;
   tags?: string[];
+  authorId?: number;
+  authorDisplayName?: string;
 };
 
 type FeedResponse = {
@@ -26,11 +28,22 @@ export function FeedList({ endpoint }: { endpoint: string }) {
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const endpointRef = useRef(endpoint);
+
+  // Reset when endpoint changes
+  useEffect(() => {
+    if (endpointRef.current !== endpoint) {
+      endpointRef.current = endpoint;
+      setItems([]);
+      setCursor(null);
+      setHasLoaded(false);
+    }
+  }, [endpoint]);
 
   const load = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-    const url = new URL(endpoint, window.location.origin);
+    const url = new URL(endpointRef.current, window.location.origin);
     if (cursor) {
       url.searchParams.set('cursor', cursor);
     }
@@ -41,7 +54,7 @@ export function FeedList({ endpoint }: { endpoint: string }) {
     setCursor(data.nextCursor);
     setHasLoaded(true);
     setLoading(false);
-  }, [cursor, endpoint, loading]);
+  }, [cursor, loading]);
 
   useEffect(() => {
     if (hasLoaded) return;
@@ -80,11 +93,18 @@ export function FeedList({ endpoint }: { endpoint: string }) {
           regionId={item.regionId}
           tags={item.tags}
           createdAt={item.createdAt}
+          authorId={item.authorId}
+          authorDisplayName={item.authorDisplayName}
         />
       ))}
       <div ref={sentinelRef} />
       {loading && <p className="text-center text-sm text-gray-500">Loading...</p>}
-      {!cursor && hasLoaded && <p className="text-center text-sm text-gray-500">No more posts.</p>}
+      {!cursor && hasLoaded && items.length === 0 && (
+        <p className="text-center text-sm text-gray-500">No posts yet.</p>
+      )}
+      {!cursor && hasLoaded && items.length > 0 && (
+        <p className="text-center text-sm text-gray-400">You&apos;ve reached the end.</p>
+      )}
     </div>
   );
 }

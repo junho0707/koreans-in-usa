@@ -41,4 +41,5 @@ export interface UserRepository {
   updateProfile(id: number, input: UpdateProfileInput): Promise<User>;
   getPostsByUser(userId: number, cursor?: number, limit?: number): Promise<{ items: UserPostSummary[]; nextCursor: number | null }>;
   getCommentsByUser(userId: number, cursor?: number, limit?: number): Promise<{ items: UserCommentSummary[]; nextCursor: number | null }>;
+  deactivate(userId: number): Promise<void>;
 }

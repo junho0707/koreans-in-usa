@@ -1,5 +1,6 @@
 'use client';
 
+import { relativeTime } from '@/src/lib/relative-time';
 import Link from 'next/link';
 
 type PostCardProps = {
@@ -12,6 +13,8 @@ type PostCardProps = {
   regionId: string | null;
   tags?: string[];
   createdAt: string;
+  authorId?: number;
+  authorDisplayName?: string;
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -30,6 +33,8 @@ export function PostCard({
   regionId,
   tags,
   createdAt,
+  authorId,
+  authorDisplayName,
 }: PostCardProps) {
   const snippet = body.length > 150 ? body.slice(0, 150) + '...' : body;
 
@@ -43,8 +48,8 @@ export function PostCard({
           {regionId && (
             <span className="text-xs text-gray-500">{regionId}</span>
           )}
-          <span className="text-xs text-gray-400">
-            {new Date(createdAt).toLocaleDateString()}
+          <span className="text-xs text-gray-400" title={new Date(createdAt).toLocaleString()}>
+            {relativeTime(createdAt)}
           </span>
         </div>
 
@@ -52,6 +57,11 @@ export function PostCard({
         <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">{snippet}</p>
 
         <div className="flex items-center gap-4 text-xs text-gray-500">
+          {authorDisplayName && (
+            <span className="font-medium text-gray-600 dark:text-gray-400">
+              {authorDisplayName}
+            </span>
+          )}
           <span>{score} vote{score !== 1 ? 's' : ''}</span>
           {commentCount !== undefined && (
             <span>{commentCount} comment{commentCount !== 1 ? 's' : ''}</span>

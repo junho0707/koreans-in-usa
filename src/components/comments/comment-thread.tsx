@@ -6,6 +6,7 @@ import { CommentForm } from '@/src/components/comments/comment-form';
 import { AcceptedBadge } from '@/src/components/comments/accepted-badge';
 import { ReportButton } from '@/src/components/moderation/report-button';
 import { Markdown } from '@/src/components/ui/markdown';
+import { relativeTime } from '@/src/lib/relative-time';
 import { useAuth } from '@/src/components/providers/auth-context';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -46,7 +47,7 @@ function CommentItem({
         )}
         <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
           <Link href={`/users/${comment.authorId}`} className="font-medium text-foreground hover:underline">{comment.authorDisplayName}</Link>
-          <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+          <span title={new Date(comment.createdAt).toLocaleString()}>{relativeTime(comment.createdAt)}</span>
         </div>
         <div className="mb-2 text-sm">
           <Markdown content={comment.body} />

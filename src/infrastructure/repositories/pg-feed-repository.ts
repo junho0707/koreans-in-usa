@@ -16,6 +16,7 @@ type FeedRow = {
   body: string;
   type: 'QA' | 'TIP' | 'GENERAL';
   author_id: string | number;
+  author_display_name: string | null;
   created_at: string;
   region_id: 'NE' | 'S' | 'MW' | 'W' | null;
   state_code: string | null;
@@ -23,6 +24,7 @@ type FeedRow = {
   scope_usa: boolean;
   scope_region: boolean;
   score: string | number;
+  comment_count: string | number;
 };
 
 function buildCommonFilters(filters: FeedFilters, startIndex = 1): QueryParts {
@@ -57,6 +59,7 @@ function toFeedItem(row: FeedRow): FeedItem {
     body: row.body,
     type: row.type,
     authorId: Number(row.author_id),
+    authorDisplayName: row.author_display_name ?? 'Anonymous',
     createdAt: row.created_at,
     regionId: row.region_id,
     stateCode: row.state_code,
@@ -64,6 +67,7 @@ function toFeedItem(row: FeedRow): FeedItem {
     scopeUsa: row.scope_usa,
     scopeRegion: row.scope_region,
     score: Number(row.score),
+    commentCount: Number(row.comment_count ?? 0),
   };
 }
 
@@ -139,15 +143,18 @@ export class PgFeedRepository implements FeedRepository {
              p.body,
              p.type,
              p.author_id,
+             u.display_name AS author_display_name,
              p.created_at,
              p.region_id,
              p.state_code,
              p.metro_area,
              p.scope_usa,
              p.scope_region,
-             COALESCE(ps.score, 0)::bigint AS score
+             COALESCE(ps.score, 0)::bigint AS score,
+             (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id)::bigint AS comment_count
       FROM posts p
       JOIN candidate_ids c ON c.id = p.id
+      LEFT JOIN users u ON u.id = p.author_id
       LEFT JOIN post_scores ps ON ps.target_id = p.id
       ${whereSql}
       ${orderBy}
@@ -172,6 +179,7 @@ export class PgFeedRepository implements FeedRepository {
         body: item.body,
         type: item.type,
         author_id: item.authorId,
+        author_display_name: item.authorDisplayName,
         created_at: item.createdAt,
         region_id: item.regionId,
         state_code: item.stateCode,
@@ -179,6 +187,7 @@ export class PgFeedRepository implements FeedRepository {
         scope_usa: item.scopeUsa,
         scope_region: item.scopeRegion,
         score: item.score,
+        comment_count: item.commentCount,
       })),
       sort,
     );
@@ -213,15 +222,18 @@ export class PgFeedRepository implements FeedRepository {
              p.body,
              p.type,
              p.author_id,
+             u.display_name AS author_display_name,
              p.created_at,
              p.region_id,
              p.state_code,
              p.metro_area,
              p.scope_usa,
              p.scope_region,
-             COALESCE(ps.score, 0)::bigint AS score
+             COALESCE(ps.score, 0)::bigint AS score,
+             (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id)::bigint AS comment_count
       FROM posts p
       JOIN regions r ON r.id = p.region_id
+      LEFT JOIN users u ON u.id = p.author_id
       LEFT JOIN post_scores ps ON ps.target_id = p.id
       WHERE ${whereSql}
       ${recentOnly}
@@ -247,6 +259,7 @@ export class PgFeedRepository implements FeedRepository {
         body: item.body,
         type: item.type,
         author_id: item.authorId,
+        author_display_name: item.authorDisplayName,
         created_at: item.createdAt,
         region_id: item.regionId,
         state_code: item.stateCode,
@@ -254,6 +267,7 @@ export class PgFeedRepository implements FeedRepository {
         scope_usa: item.scopeUsa,
         scope_region: item.scopeRegion,
         score: item.score,
+        comment_count: item.commentCount,
       })),
       sort,
     );

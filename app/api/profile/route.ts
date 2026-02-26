@@ -54,3 +54,21 @@ export async function PATCH(request: NextRequest) {
     return badRequest(error instanceof Error ? error.message : 'Invalid request');
   }
 }
+
+export async function DELETE() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+
+  if (!supabaseUser) {
+    return unauthorized('Not authenticated');
+  }
+
+  const appUser = await getOrCreateUser(repo, {
+    supabaseUid: supabaseUser.id,
+    email: supabaseUser.email ?? null,
+    phone: supabaseUser.phone ?? null,
+  });
+
+  await repo.deactivate(appUser.id);
+  return NextResponse.json({ success: true });
+}

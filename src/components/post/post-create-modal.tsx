@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { Markdown } from '@/src/components/ui/markdown';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -9,17 +10,22 @@ type Props = {
   defaultRegion?: string;
 };
 
+const MAX_TITLE = 150;
+const MAX_BODY = 10000;
+
 export function PostCreateModal({ onClose, defaultRegion }: Props) {
   const { user } = useAuth();
   const router = useRouter();
   const [type, setType] = useState<'GENERAL' | 'QA' | 'TIP'>('GENERAL');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [scopeUsa, setScopeUsa] = useState(!defaultRegion);
   const [scopeRegion, setScopeRegion] = useState(!!defaultRegion);
   const [regionId, setRegionId] = useState(defaultRegion ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
 
   if (!user) return null;
 
@@ -35,6 +41,7 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
         type,
         title,
         body,
+        imageUrl: imageUrl || null,
         scopeUsa,
         scopeRegion,
         regionId: scopeRegion ? regionId : null,
@@ -55,12 +62,12 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="mx-4 w-full max-w-lg rounded-xl bg-background p-6 shadow-xl"
+        className="mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-background p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">Create Post</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-foreground">
+          <button onClick={onClose} className="text-gray-500 hover:text-foreground text-xl">
             &times;
           </button>
         </div>
@@ -80,24 +87,70 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Title</label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm font-medium">Title</label>
+              <span className={`text-xs ${title.length > MAX_TITLE ? 'text-red-500' : 'text-gray-400'}`}>
+                {title.length}/{MAX_TITLE}
+              </span>
+            </div>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={MAX_TITLE}
               required
+              placeholder="What's on your mind?"
               className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Body</label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              required
-              rows={5}
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm font-medium">Body</label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  {showPreview ? 'Edit' : 'Preview'}
+                </button>
+                <span className={`text-xs ${body.length > MAX_BODY ? 'text-red-500' : 'text-gray-400'}`}>
+                  {body.length}/{MAX_BODY}
+                </span>
+              </div>
+            </div>
+            {showPreview ? (
+              <div className="min-h-[120px] rounded-lg border p-3 dark:border-gray-700">
+                {body ? <Markdown content={body} /> : <p className="text-sm text-gray-400">Nothing to preview</p>}
+              </div>
+            ) : (
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                maxLength={MAX_BODY}
+                required
+                rows={6}
+                placeholder="Supports **bold**, *italic*, `code`, [links](url), and more..."
+                className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Image URL (optional)</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              type="url"
+              placeholder="https://example.com/image.jpg"
               className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
             />
+            {imageUrl && (
+              <div className="mt-2 overflow-hidden rounded-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="Preview" className="max-h-32 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4">
@@ -139,7 +192,7 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || title.length > MAX_TITLE || body.length > MAX_BODY}
             className="w-full rounded-lg bg-foreground px-4 py-2 text-background disabled:opacity-50"
           >
             {saving ? 'Creating...' : 'Create Post'}

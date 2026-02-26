@@ -1,6 +1,10 @@
 import { Post } from '@/src/domain/entities/post';
 
-export type FeedItem = Post & { score: number };
+export type FeedItem = Post & {
+  score: number;
+  authorDisplayName: string;
+  commentCount: number;
+};
 
 export function compareFeedItems(a: FeedItem, b: FeedItem): number {
   if (b.score !== a.score) return b.score - a.score;
