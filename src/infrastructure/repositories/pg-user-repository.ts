@@ -21,6 +21,8 @@ type UserRow = {
   korean_x_identity: string | null;
   role: 'USER' | 'ADMIN';
   is_active: boolean;
+  reputation: string | number;
+  badge: string | null;
   created_at: string;
 };
 
@@ -38,12 +40,14 @@ function toUser(row: UserRow): User {
     koreanXIdentity: row.korean_x_identity,
     role: row.role,
     isActive: row.is_active,
+    reputation: Number(row.reputation ?? 0),
+    badge: row.badge,
     createdAt: row.created_at,
   };
 }
 
 const SELECT_FIELDS = `id, supabase_uid, email, phone, display_name, profile_state,
-  country, city, interests, korean_x_identity, role, is_active, created_at`;
+  country, city, interests, korean_x_identity, role, is_active, reputation, badge, created_at`;
 
 export class PgUserRepository implements UserRepository {
   async findBySupabaseUid(uid: string): Promise<User | null> {

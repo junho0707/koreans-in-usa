@@ -26,6 +26,8 @@ export async function GET(
       city: user.city,
       interests: user.interests,
       koreanXIdentity: user.koreanXIdentity,
+      reputation: user.reputation,
+      badge: user.badge,
       createdAt: user.createdAt,
     });
   } catch {

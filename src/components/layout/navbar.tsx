@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { NotificationBell } from '@/src/components/notifications/notification-bell';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -42,6 +43,13 @@ export function Navbar() {
           ))}
           {loading ? null : user ? (
             <div className="flex items-center gap-3">
+              <NotificationBell />
+              <Link
+                href="/messages"
+                className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
+              >
+                Messages
+              </Link>
               <Link
                 href="/bookmarks"
                 className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
@@ -103,6 +111,9 @@ export function Navbar() {
           {!loading && (
             user ? (
               <>
+                <Link href="/messages" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
+                  Messages
+                </Link>
                 <Link href="/bookmarks" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
                   Saved
                 </Link>

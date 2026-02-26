@@ -1,5 +1,7 @@
 import { createPost } from '@/src/application/use-cases/community/create-post';
 import { autoTagPost } from '@/src/application/use-cases/tags/auto-tag-post';
+import { addReputation } from '@/src/application/use-cases/user/update-reputation';
+import { REP_POINTS } from '@/src/domain/services/reputation';
 import { normalizePostType } from '@/src/domain/entities/post';
 import { PgCommunityRepository } from '@/src/infrastructure/repositories/pg-community-repository';
 import { PgTagRepository } from '@/src/infrastructure/repositories/pg-tag-repository';
@@ -30,8 +32,9 @@ export async function POST(request: NextRequest) {
       metroArea: body.metroArea ?? null,
     });
 
-    // Auto-tag in background (non-blocking)
+    // Auto-tag and add reputation in background (non-blocking)
     autoTagPost(tagRepo, created.id, body.title, body.body).catch(() => {});
+    addReputation(userId, REP_POINTS.POST_CREATED).catch(() => {});
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

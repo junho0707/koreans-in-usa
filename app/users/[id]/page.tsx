@@ -2,6 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FollowButton } from '@/src/components/follow/follow-button';
+import { useAuth } from '@/src/components/providers/auth-context';
 
 type PublicUser = {
   id: number;
@@ -10,7 +13,25 @@ type PublicUser = {
   city: string | null;
   interests: string[];
   koreanXIdentity: string | null;
+  reputation: number;
+  badge: string | null;
   createdAt: string;
+};
+
+const BADGE_COLORS: Record<string, string> = {
+  newcomer: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  contributor: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  active: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  expert: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  legend: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+};
+
+const BADGE_LABELS: Record<string, string> = {
+  newcomer: 'Newcomer',
+  contributor: 'Contributor',
+  active: 'Active Member',
+  expert: 'Expert',
+  legend: 'Legend',
 };
 
 type PostItem = {
@@ -33,19 +54,29 @@ type CommentItem = {
 
 export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { user: currentUser } = useAuth();
+  const dmRouter = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [tab, setTab] = useState<'posts' | 'comments'>('posts');
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [postsCursor, setPostsCursor] = useState<number | null>(null);
   const [commentsCursor, setCommentsCursor] = useState<number | null>(null);
+  const [followers, setFollowers] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/users/${id}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setUser)
+    Promise.all([
+      fetch(`/api/users/${id}`).then((r) => (r.ok ? r.json() : Promise.reject())),
+      fetch(`/api/users/${id}/followers`).then((r) => r.json()).catch(() => ({ followers: 0, following: 0 })),
+    ])
+      .then(([userData, followData]) => {
+        setUser(userData);
+        setFollowers(followData.followers ?? 0);
+        setFollowingCount(followData.following ?? 0);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
@@ -105,12 +136,47 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{user.displayName}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Joined {joined}
-          {user.city && user.profileState && ` · ${user.city}, ${user.profileState}`}
-          {!user.city && user.profileState && ` · ${user.profileState}`}
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{user.displayName}</h1>
+              {user.badge && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_COLORS[user.badge] ?? BADGE_COLORS.newcomer}`}>
+                  {BADGE_LABELS[user.badge] ?? user.badge}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500">{user.reputation} reputation</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Joined {joined}
+              {user.city && user.profileState && ` · ${user.city}, ${user.profileState}`}
+              {!user.city && user.profileState && ` · ${user.profileState}`}
+            </p>
+            <div className="mt-2 flex gap-4 text-sm">
+              <span><strong>{followers}</strong> <span className="text-gray-500">followers</span></span>
+              <span><strong>{followingCount}</strong> <span className="text-gray-500">following</span></span>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {currentUser && currentUser.id !== user.id && (
+              <button
+                onClick={async () => {
+                  const res = await fetch('/api/messages/conversations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: user.id }),
+                  });
+                  const data = await res.json();
+                  if (data.conversationId) dmRouter.push(`/messages/${data.conversationId}`);
+                }}
+                className="rounded-lg border px-4 py-1.5 text-sm hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              >
+                Message
+              </button>
+            )}
+            <FollowButton targetUserId={user.id} />
+          </div>
+        </div>
         {user.koreanXIdentity && (
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{user.koreanXIdentity}</p>
         )}

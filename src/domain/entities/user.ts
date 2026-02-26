@@ -13,5 +13,7 @@ export type User = {
   koreanXIdentity: string | null;
   role: UserRole;
   isActive: boolean;
+  reputation: number;
+  badge: string | null;
   createdAt: string;
 };
