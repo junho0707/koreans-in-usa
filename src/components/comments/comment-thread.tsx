@@ -3,6 +3,7 @@
 import { CommentNode } from '@/src/domain/entities/comment';
 import { VoteButton } from '@/src/components/vote/vote-button';
 import { CommentForm } from '@/src/components/comments/comment-form';
+import { CommentActions } from '@/src/components/comments/comment-actions';
 import { AcceptedBadge } from '@/src/components/comments/accepted-badge';
 import { ReportButton } from '@/src/components/moderation/report-button';
 import { Markdown } from '@/src/components/ui/markdown';
@@ -73,6 +74,12 @@ function CommentItem({
               Accept
             </button>
           )}
+          <CommentActions
+            commentId={comment.id}
+            authorId={comment.authorId}
+            initialBody={comment.body}
+            onUpdated={onReplySubmitted}
+          />
           <ReportButton targetType="COMMENT" targetId={comment.id} />
         </div>
 

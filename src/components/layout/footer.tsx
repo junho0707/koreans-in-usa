@@ -10,6 +10,8 @@ export function Footer() {
           <Link href="/search" className="hover:text-foreground">Search</Link>
           <span>&middot;</span>
           <Link href="/trending" className="hover:text-foreground">Trending</Link>
+          <span>&middot;</span>
+          <Link href="/tags" className="hover:text-foreground">Topics</Link>
         </div>
         <p className="mt-3 text-center text-sm text-gray-400">
           Koreans in USA &copy; {new Date().getFullYear()}

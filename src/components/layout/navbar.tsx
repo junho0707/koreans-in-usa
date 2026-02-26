@@ -4,21 +4,23 @@ import { useAuth } from '@/src/components/providers/auth-context';
 import { NotificationBell } from '@/src/components/notifications/notification-bell';
 import { ThemeToggle } from '@/src/components/layout/theme-toggle';
 import { LanguageToggle } from '@/src/components/layout/language-toggle';
+import { useI18n } from '@/src/lib/i18n/context';
 import Link from 'next/link';
 import { useState } from 'react';
 
-const NAV_LINKS = [
-  { href: '/', label: 'USA Feed' },
-  { href: '/groups/northeast', label: 'Northeast' },
-  { href: '/groups/south', label: 'South' },
-  { href: '/groups/midwest', label: 'Midwest' },
-  { href: '/groups/west', label: 'West' },
-  { href: '/search', label: 'Search' },
-];
-
 export function Navbar() {
   const { user, loading, supabase } = useAuth();
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { href: '/', label: t('nav.usaFeed') },
+    { href: '/groups/northeast', label: t('nav.northeast') },
+    { href: '/groups/south', label: t('nav.south') },
+    { href: '/groups/midwest', label: t('nav.midwest') },
+    { href: '/groups/west', label: t('nav.west') },
+    { href: '/search', label: t('nav.search') },
+  ];
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -52,13 +54,13 @@ export function Navbar() {
                 href="/messages"
                 className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
               >
-                Messages
+                {t('nav.messages')}
               </Link>
               <Link
                 href="/bookmarks"
                 className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
               >
-                Saved
+                {t('nav.saved')}
               </Link>
               <Link
                 href="/profile"
@@ -82,7 +84,7 @@ export function Navbar() {
               href="/login"
               className="rounded-lg bg-foreground px-3 py-1.5 text-sm text-background"
             >
-              Sign In
+              {t('nav.signIn')}
             </Link>
           )}
         </div>
@@ -120,10 +122,10 @@ export function Navbar() {
             user ? (
               <>
                 <Link href="/messages" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
-                  Messages
+                  {t('nav.messages')}
                 </Link>
                 <Link href="/bookmarks" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
-                  Saved
+                  {t('nav.saved')}
                 </Link>
                 <Link href="/profile" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>
                   {user.displayName}
@@ -134,7 +136,7 @@ export function Navbar() {
               </>
             ) : (
               <Link href="/login" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>
-                Sign In
+                {t('nav.signIn')}
               </Link>
             )
           )}

@@ -5,6 +5,7 @@ import { PostCreateModal } from '@/src/components/post/post-create-modal';
 import { NewsSection } from '@/src/components/news/news-section';
 import { PinnedPosts } from '@/src/components/feed/pinned-posts';
 import { useAuth } from '@/src/components/providers/auth-context';
+import { useI18n } from '@/src/lib/i18n/context';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -18,6 +19,7 @@ const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
 
 export default function Home() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab] = useState<'usa' | 'following'>('usa');
   const [sort, setSort] = useState<FeedSort>('top12h');
@@ -25,20 +27,20 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Feed</h1>
+        <h1 className="text-2xl font-bold">{t('feed.title')}</h1>
         <div className="flex items-center gap-3">
           <Link
             href="/trending"
             className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
           >
-            Trending
+            {t('feed.trending')}
           </Link>
           {user && (
             <button
               onClick={() => setShowCreate(true)}
               className="rounded-lg bg-foreground px-4 py-2 text-sm text-background"
             >
-              New Post
+              {t('feed.newPost')}
             </button>
           )}
         </div>
@@ -51,14 +53,14 @@ export default function Home() {
             onClick={() => setTab('usa')}
             className={`px-4 py-2 text-sm font-medium ${tab === 'usa' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
           >
-            USA Feed
+            {t('feed.usaFeed')}
           </button>
           {user && (
             <button
               onClick={() => setTab('following')}
               className={`px-4 py-2 text-sm font-medium ${tab === 'following' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
             >
-              Following
+              {t('feed.following')}
             </button>
           )}
         </div>

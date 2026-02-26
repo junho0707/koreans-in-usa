@@ -15,14 +15,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     const data = await res.json();
     const post = data.post;
+    const description = post.body.slice(0, 160).replace(/\n/g, ' ');
+
+    const ogImages = post.imageUrl ? [{ url: post.imageUrl }] : [];
 
     return {
       title: `${post.title} | Koreans in USA`,
-      description: post.body.slice(0, 160),
+      description,
       openGraph: {
         title: post.title,
-        description: post.body.slice(0, 160),
+        description,
         type: 'article',
+        images: ogImages,
+        siteName: 'Koreans in USA',
+      },
+      twitter: {
+        card: post.imageUrl ? 'summary_large_image' : 'summary',
+        title: post.title,
+        description,
+        images: ogImages.map((img) => img.url),
       },
     };
   } catch {

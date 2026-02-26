@@ -14,6 +14,14 @@ const REGION_NAMES: Record<string, string> = {
   west: 'West',
 };
 
+type FeedSort = 'top12h' | 'new' | 'top';
+
+const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
+  { value: 'top12h', label: 'Hot' },
+  { value: 'new', label: 'New' },
+  { value: 'top', label: 'Top' },
+];
+
 function RegionContent() {
   const { user } = useAuth();
   const params = useParams();
@@ -21,11 +29,11 @@ function RegionContent() {
   const slug = params.slug as string;
   const state = searchParams.get('state');
   const [showCreate, setShowCreate] = useState(false);
+  const [sort, setSort] = useState<FeedSort>('top12h');
 
   const regionName = REGION_NAMES[slug] ?? slug;
-  const endpoint = state
-    ? `/api/feed/region/${slug}?sort=top12h&state=${state}&limit=30`
-    : `/api/feed/region/${slug}?sort=top12h&limit=30`;
+  const baseEndpoint = `/api/feed/region/${slug}?sort=${sort}&limit=30`;
+  const endpoint = state ? `${baseEndpoint}&state=${state}` : baseEndpoint;
 
   const regionIdMap: Record<string, string> = {
     northeast: 'NE',
@@ -46,6 +54,23 @@ function RegionContent() {
             New Post
           </button>
         )}
+      </div>
+
+      {/* Sort controls */}
+      <div className="mb-4 flex gap-1">
+        {SORT_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setSort(opt.value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              sort === opt.value
+                ? 'bg-foreground text-background'
+                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="mb-8">

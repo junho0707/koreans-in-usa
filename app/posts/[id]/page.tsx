@@ -1,6 +1,7 @@
 'use client';
 
 import { PostDetailView } from '@/src/components/post/post-detail-view';
+import { PostActions } from '@/src/components/post/post-actions';
 import { CommentThread } from '@/src/components/comments/comment-thread';
 import { CommentForm } from '@/src/components/comments/comment-form';
 import { CommentSortToggle } from '@/src/components/comments/comment-sort-toggle';
@@ -57,6 +58,13 @@ export default function PostPage() {
       </div>
 
       <PostDetailView post={post} />
+
+      <PostActions
+        postId={post.id}
+        postAuthorId={post.authorId}
+        initialTitle={post.title}
+        initialBody={post.body}
+      />
 
       <hr className="my-8 border-gray-200 dark:border-gray-800" />
 
