@@ -13,7 +13,10 @@ export function Footer() {
           <span>&middot;</span>
           <Link href="/tags" className="hover:text-foreground">Topics</Link>
         </div>
-        <p className="mt-3 text-center text-sm text-gray-400">
+        <p className="mt-3 text-center text-xs text-gray-400">
+          Press <kbd className="rounded bg-gray-200 px-1 dark:bg-gray-700">?</kbd> for keyboard shortcuts
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-400">
           Koreans in USA &copy; {new Date().getFullYear()}
         </p>
       </div>

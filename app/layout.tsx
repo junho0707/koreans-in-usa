@@ -5,6 +5,8 @@ import { I18nProvider } from "@/src/lib/i18n/context";
 import { Navbar } from "@/src/components/layout/navbar";
 import { Footer } from "@/src/components/layout/footer";
 import { ScrollToTop } from "@/src/components/ui/scroll-to-top";
+import { ToastProvider } from "@/src/components/ui/toast";
+import { KeyboardShortcuts } from "@/src/components/ui/keyboard-shortcuts";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,15 +37,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <SupabaseProvider>
           <I18nProvider>
-            <Navbar />
-            <div className="flex-1">{children}</div>
-            <Footer />
-            <ScrollToTop />
+            <ToastProvider>
+              <Navbar />
+              <div className="flex-1">{children}</div>
+              <Footer />
+              <ScrollToTop />
+              <KeyboardShortcuts />
+            </ToastProvider>
           </I18nProvider>
         </SupabaseProvider>
       </body>

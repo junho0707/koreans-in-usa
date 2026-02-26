@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/src/components/providers/auth-context';
+import { useToast } from '@/src/components/ui/toast';
 
 export function BookmarkButton({ postId }: { postId: number }) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [bookmarked, setBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +31,7 @@ export function BookmarkButton({ postId }: { postId: number }) {
       });
       const data = await res.json();
       setBookmarked(data.bookmarked);
+      toast(data.bookmarked ? 'Post saved!' : 'Post unsaved', 'success');
     } catch {
       setBookmarked(bookmarked);
     } finally {
