@@ -4,6 +4,7 @@ import { SupabaseProvider } from "@/src/components/providers/supabase-provider";
 import { I18nProvider } from "@/src/lib/i18n/context";
 import { Navbar } from "@/src/components/layout/navbar";
 import { Footer } from "@/src/components/layout/footer";
+import { MobileNav } from "@/src/components/layout/mobile-nav";
 import { ScrollToTop } from "@/src/components/ui/scroll-to-top";
 import { ToastProvider } from "@/src/components/ui/toast";
 import { KeyboardShortcuts } from "@/src/components/ui/keyboard-shortcuts";
@@ -48,8 +49,9 @@ export default function RootLayout({
           <I18nProvider>
             <ToastProvider>
               <Navbar />
-              <div className="flex-1">{children}</div>
-              <Footer />
+              <div className="flex-1 pb-16 md:pb-0">{children}</div>
+              <div className="hidden md:block"><Footer /></div>
+              <MobileNav />
               <ScrollToTop />
               <KeyboardShortcuts />
             </ToastProvider>

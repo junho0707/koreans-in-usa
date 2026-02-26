@@ -7,6 +7,7 @@ import { PinnedPosts } from '@/src/components/feed/pinned-posts';
 import { PopularTags } from '@/src/components/tags/popular-tags';
 import { HotDiscussions } from '@/src/components/feed/hot-discussions';
 import { CommunityInfo } from '@/src/components/feed/community-info';
+import { FabCreate } from '@/src/components/post/fab-create';
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useI18n } from '@/src/lib/i18n/context';
 import { useState } from 'react';
@@ -146,6 +147,7 @@ export default function Home() {
         </aside>
       </div>
 
+      <FabCreate onClick={() => setShowCreate(true)} />
       {showCreate && <PostCreateModal onClose={() => setShowCreate(false)} />}
     </main>
   );

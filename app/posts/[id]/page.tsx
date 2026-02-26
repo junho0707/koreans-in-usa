@@ -2,6 +2,7 @@
 
 import { PostDetailView } from '@/src/components/post/post-detail-view';
 import { PostActions } from '@/src/components/post/post-actions';
+import { PostStats } from '@/src/components/post/post-stats';
 import { RelatedPosts } from '@/src/components/post/related-posts';
 import { CommentThread } from '@/src/components/comments/comment-thread';
 import { CommentForm } from '@/src/components/comments/comment-form';
@@ -66,6 +67,8 @@ export default function PostPage() {
         initialTitle={post.title}
         initialBody={post.body}
       />
+
+      <PostStats postId={post.id} postAuthorId={post.authorId} />
 
       <hr className="my-8 border-gray-200 dark:border-gray-800" />
 
