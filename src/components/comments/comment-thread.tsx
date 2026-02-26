@@ -5,7 +5,9 @@ import { VoteButton } from '@/src/components/vote/vote-button';
 import { CommentForm } from '@/src/components/comments/comment-form';
 import { AcceptedBadge } from '@/src/components/comments/accepted-badge';
 import { ReportButton } from '@/src/components/moderation/report-button';
+import { Markdown } from '@/src/components/ui/markdown';
 import { useAuth } from '@/src/components/providers/auth-context';
+import Link from 'next/link';
 import { useState } from 'react';
 
 type Props = {
@@ -43,10 +45,12 @@ function CommentItem({
           </div>
         )}
         <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
-          <span className="font-medium text-foreground">{comment.authorDisplayName}</span>
+          <Link href={`/users/${comment.authorId}`} className="font-medium text-foreground hover:underline">{comment.authorDisplayName}</Link>
           <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
         </div>
-        <p className="mb-2 text-sm whitespace-pre-wrap">{comment.body}</p>
+        <div className="mb-2 text-sm">
+          <Markdown content={comment.body} />
+        </div>
         <div className="flex items-center gap-3">
           <VoteButton
             targetType="COMMENT"

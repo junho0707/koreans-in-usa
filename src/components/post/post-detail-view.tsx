@@ -3,6 +3,7 @@
 import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
 import { ShareButton } from '@/src/components/post/share-button';
+import { Markdown } from '@/src/components/ui/markdown';
 import Link from 'next/link';
 
 type Props = {
@@ -57,9 +58,7 @@ export function PostDetailView({ post }: Props) {
         </div>
       )}
 
-      <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
-        {post.body}
-      </div>
+      <Markdown content={post.body} />
     </div>
   );
 }
