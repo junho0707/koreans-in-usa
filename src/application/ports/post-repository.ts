@@ -17,6 +17,7 @@ export type PostDetailRow = {
   acceptedCommentId: number | null;
   tags: string[];
   viewerVoted: boolean;
+  viewCount: number;
   imageUrl: string | null;
   createdAt: string;
 };

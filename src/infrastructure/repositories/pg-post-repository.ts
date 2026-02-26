@@ -19,6 +19,7 @@ type PostRow = {
   accepted_comment_id: string | number | null;
   tags: string[] | null;
   viewer_voted: boolean;
+  view_count: string | number;
   image_url: string | null;
   created_at: string;
 };
@@ -44,6 +45,7 @@ export class PgPostRepository implements PostRepository {
         p.state_code, p.metro_area,
         p.accepted_comment_id,
         p.image_url,
+        COALESCE(p.view_count, 0)::int AS view_count,
         p.created_at,
         COALESCE(vs.score, 0)::int AS score,
         COALESCE(cc.cnt, 0)::int AS comment_count,
@@ -92,6 +94,7 @@ export class PgPostRepository implements PostRepository {
       acceptedCommentId: row.accepted_comment_id ? Number(row.accepted_comment_id) : null,
       tags: row.tags ?? [],
       viewerVoted: row.viewer_voted,
+      viewCount: Number(row.view_count),
       imageUrl: row.image_url,
       createdAt: row.created_at,
     };

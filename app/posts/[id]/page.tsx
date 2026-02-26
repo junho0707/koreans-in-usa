@@ -34,7 +34,9 @@ export default function PostPage() {
 
   useEffect(() => {
     loadPost();
-  }, [loadPost]);
+    // Track view (fire and forget)
+    fetch(`/api/posts/${id}/view`, { method: 'POST' }).catch(() => {});
+  }, [loadPost, id]);
 
   async function handleAccept(commentId: number) {
     await fetch(`/api/posts/${id}/accept`, {

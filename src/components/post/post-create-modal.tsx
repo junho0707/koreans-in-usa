@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/src/components/providers/auth-context';
 import { Markdown } from '@/src/components/ui/markdown';
+import { MarkdownToolbar } from '@/src/components/ui/markdown-toolbar';
 import { saveDraft, loadDraft, clearDraft } from '@/src/lib/drafts';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -179,15 +180,24 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
                 {body ? <Markdown content={body} /> : <p className="text-sm text-gray-400">Nothing to preview</p>}
               </div>
             ) : (
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                maxLength={MAX_BODY}
-                required
-                rows={6}
-                placeholder="Supports **bold**, *italic*, `code`, [links](url), and more..."
-                className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-              />
+              <div className="space-y-2">
+                <MarkdownToolbar
+                  textareaId="post-body"
+                  onInsert={(before, after) => {
+                    setBody((prev) => prev + before + after);
+                  }}
+                />
+                <textarea
+                  id="post-body"
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  maxLength={MAX_BODY}
+                  required
+                  rows={6}
+                  placeholder="Supports **bold**, *italic*, `code`, [links](url), and more..."
+                  className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+                />
+              </div>
             )}
           </div>
 

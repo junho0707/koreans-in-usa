@@ -50,6 +50,9 @@ export function PostDetailView({ post }: Props) {
         <span>{estimateReadTime(post.body)}</span>
         <span>{post.score} vote{post.score !== 1 ? 's' : ''}</span>
         <span>{post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}</span>
+        {post.viewCount > 0 && (
+          <span>{post.viewCount.toLocaleString()} view{post.viewCount !== 1 ? 's' : ''}</span>
+        )}
         <BookmarkButton postId={post.id} />
         <ShareButton postId={post.id} title={post.title} />
       </div>
