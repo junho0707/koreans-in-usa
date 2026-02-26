@@ -5,30 +5,66 @@ import { PostCreateModal } from '@/src/components/post/post-create-modal';
 import { NewsSection } from '@/src/components/news/news-section';
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function Home() {
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
+  const [tab, setTab] = useState<'usa' | 'following'>('usa');
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">USA Feed</h1>
+        <h1 className="text-2xl font-bold">Feed</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/trending"
+            className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
+          >
+            Trending
+          </Link>
+          {user && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="rounded-lg bg-foreground px-4 py-2 text-sm text-background"
+            >
+              New Post
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Feed tabs */}
+      <div className="mb-4 flex border-b dark:border-gray-700">
+        <button
+          onClick={() => setTab('usa')}
+          className={`px-4 py-2 text-sm font-medium ${tab === 'usa' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
+        >
+          USA Feed
+        </button>
         {user && (
           <button
-            onClick={() => setShowCreate(true)}
-            className="rounded-lg bg-foreground px-4 py-2 text-sm text-background"
+            onClick={() => setTab('following')}
+            className={`px-4 py-2 text-sm font-medium ${tab === 'following' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
           >
-            New Post
+            Following
           </button>
         )}
       </div>
 
-      <div className="mb-8">
-        <NewsSection />
-      </div>
+      {tab === 'usa' && (
+        <>
+          <div className="mb-8">
+            <NewsSection />
+          </div>
+          <FeedList endpoint="/api/feed/usa?sort=top12h&limit=30" />
+        </>
+      )}
 
-      <FeedList endpoint="/api/feed/usa?sort=top12h&limit=30" />
+      {tab === 'following' && (
+        <FeedList endpoint="/api/feed/following?limit=30" />
+      )}
+
       {showCreate && <PostCreateModal onClose={() => setShowCreate(false)} />}
     </main>
   );
