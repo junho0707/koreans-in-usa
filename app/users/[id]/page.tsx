@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FollowButton } from '@/src/components/follow/follow-button';
+import { Avatar } from '@/src/components/ui/avatar';
 import { useAuth } from '@/src/components/providers/auth-context';
 
 type PublicUser = {
@@ -137,7 +138,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     <main className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex items-start gap-4">
+            <Avatar name={user.displayName} size="lg" />
+            <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{user.displayName}</h1>
               {user.badge && (
@@ -156,6 +159,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               <span><strong>{followers}</strong> <span className="text-gray-500">followers</span></span>
               <span><strong>{followingCount}</strong> <span className="text-gray-500">following</span></span>
             </div>
+          </div>
           </div>
           <div className="flex gap-2">
             {currentUser && currentUser.id !== user.id && (

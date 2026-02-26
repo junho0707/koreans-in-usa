@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar } from '@/src/components/ui/avatar';
 import { relativeTime } from '@/src/lib/relative-time';
 import Link from 'next/link';
 
@@ -56,9 +57,10 @@ export function PostCard({
         <h3 className="mb-1 font-semibold">{title}</h3>
         <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">{snippet}</p>
 
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className="flex items-center gap-3 text-xs text-gray-500">
           {authorDisplayName && (
-            <span className="font-medium text-gray-600 dark:text-gray-400">
+            <span className="flex items-center gap-1.5 font-medium text-gray-600 dark:text-gray-400">
+              <Avatar name={authorDisplayName} size="sm" />
               {authorDisplayName}
             </span>
           )}
