@@ -2,8 +2,9 @@
 
 import { useAuth } from '@/src/components/providers/auth-context';
 import { Markdown } from '@/src/components/ui/markdown';
+import { saveDraft, loadDraft, clearDraft } from '@/src/lib/drafts';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 type Props = {
   onClose: () => void;
@@ -26,6 +27,43 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load draft on mount
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && (draft.title || draft.body)) {
+      setHasDraft(true);
+    }
+  }, []);
+
+  function restoreDraft() {
+    const draft = loadDraft();
+    if (draft) {
+      setTitle(draft.title);
+      setBody(draft.body);
+      setType(draft.type as 'GENERAL' | 'QA' | 'TIP');
+      setImageUrl(draft.imageUrl);
+      setHasDraft(false);
+    }
+  }
+
+  function dismissDraft() {
+    clearDraft();
+    setHasDraft(false);
+  }
+
+  // Auto-save draft every 5 seconds when content changes
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    if (title || body) {
+      autoSaveTimer.current = setTimeout(() => {
+        saveDraft({ title, body, type, imageUrl });
+      }, 5000);
+    }
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [title, body, type, imageUrl]);
 
   if (!user) return null;
 
@@ -50,6 +88,7 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
 
     if (res.ok) {
       const data = await res.json();
+      clearDraft();
       onClose();
       router.push(`/posts/${data.id}`);
     } else {
@@ -71,6 +110,16 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
             &times;
           </button>
         </div>
+
+        {hasDraft && (
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 p-3 text-sm dark:bg-blue-900/30">
+            <span className="text-blue-700 dark:text-blue-300">You have an unsaved draft.</span>
+            <div className="flex gap-2">
+              <button onClick={restoreDraft} className="text-xs font-medium text-blue-600 hover:underline">Restore</button>
+              <button onClick={dismissDraft} className="text-xs text-gray-500 hover:underline">Dismiss</button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
