@@ -7,6 +7,7 @@ import { PinnedPosts } from '@/src/components/feed/pinned-posts';
 import { AnnouncementBanner } from '@/src/components/feed/announcement-banner';
 import { PopularTags } from '@/src/components/tags/popular-tags';
 import { HotDiscussions } from '@/src/components/feed/hot-discussions';
+import { WhoToFollow } from '@/src/components/feed/who-to-follow';
 import { CommunityInfo } from '@/src/components/feed/community-info';
 import { FabCreate } from '@/src/components/post/fab-create';
 import { useAuth } from '@/src/components/providers/auth-context';
@@ -145,6 +146,7 @@ export default function Home() {
         <aside className="hidden w-64 shrink-0 space-y-4 lg:block">
           <CommunityInfo />
           <PopularTags />
+          <WhoToFollow />
           <HotDiscussions />
         </aside>
       </div>

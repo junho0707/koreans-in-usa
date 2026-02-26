@@ -4,6 +4,7 @@ import { PostDetailView } from '@/src/components/post/post-detail-view';
 import { PostActions } from '@/src/components/post/post-actions';
 import { PostStats } from '@/src/components/post/post-stats';
 import { PollWidget } from '@/src/components/post/poll-widget';
+import { ReactionBar } from '@/src/components/post/reaction-bar';
 import { RelatedPosts } from '@/src/components/post/related-posts';
 import { ReadingProgress } from '@/src/components/ui/reading-progress';
 import { CommentThread } from '@/src/components/comments/comment-thread';
@@ -77,6 +78,10 @@ export default function PostPage() {
       <PostStats postId={post.id} postAuthorId={post.authorId} />
 
       <PollWidget postId={post.id} />
+
+      <div className="my-4">
+        <ReactionBar postId={post.id} />
+      </div>
 
       <hr className="my-8 border-gray-200 dark:border-gray-800" />
 
