@@ -3,13 +3,32 @@
 import { useAuth } from '@/src/components/providers/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+type NotifPrefs = {
+  emailNotifications: boolean;
+  dm: boolean;
+  comments: boolean;
+  follows: boolean;
+  mentions: boolean;
+};
 
 export default function SettingsPage() {
   const { user, loading, supabase } = useAuth();
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [prefs, setPrefs] = useState<NotifPrefs | null>(null);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/profile/notifications')
+        .then((r) => r.json())
+        .then(setPrefs)
+        .catch(() => {});
+    }
+  }, [user]);
 
   if (loading) return <div className="mx-auto max-w-lg px-4 py-16">Loading...</div>;
   if (!user) { router.push('/login'); return null; }
@@ -24,6 +43,19 @@ export default function SettingsPage() {
     await fetch('/api/profile', { method: 'DELETE' });
     await supabase.auth.signOut();
     window.location.href = '/';
+  }
+
+  async function togglePref(key: keyof NotifPrefs) {
+    if (!prefs) return;
+    const newVal = !prefs[key];
+    setPrefs({ ...prefs, [key]: newVal });
+    setSavingPrefs(true);
+    await fetch('/api/profile/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: newVal }),
+    });
+    setSavingPrefs(false);
   }
 
   return (
@@ -56,11 +88,42 @@ export default function SettingsPage() {
 
         {/* Notification preferences */}
         <section className="rounded-lg border p-4 dark:border-gray-700">
-          <h2 className="mb-3 font-semibold">Notifications</h2>
-          <p className="text-sm text-gray-500">
-            Notification preferences coming soon. You can view your notifications{' '}
-            <Link href="/notifications" className="text-blue-600 hover:underline">here</Link>.
-          </p>
+          <h2 className="mb-3 font-semibold">
+            Notifications
+            {savingPrefs && <span className="ml-2 text-xs text-gray-400">Saving...</span>}
+          </h2>
+          {prefs ? (
+            <div className="space-y-3">
+              {([
+                { key: 'emailNotifications' as const, label: 'Email Notifications', desc: 'Receive email for important updates' },
+                { key: 'comments' as const, label: 'Comments', desc: 'When someone comments on your post' },
+                { key: 'dm' as const, label: 'Direct Messages', desc: 'When someone sends you a message' },
+                { key: 'follows' as const, label: 'Follows', desc: 'When someone follows you' },
+                { key: 'mentions' as const, label: 'Mentions', desc: 'When someone mentions you' },
+              ]).map(({ key, label, desc }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{label}</p>
+                    <p className="text-xs text-gray-500">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => togglePref(key)}
+                    className={`relative h-6 w-11 rounded-full transition ${
+                      prefs[key] ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
+                        prefs[key] ? 'left-[22px]' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Loading preferences...</p>
+          )}
         </section>
 
         {/* Quick links */}

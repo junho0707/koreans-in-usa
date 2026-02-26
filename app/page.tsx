@@ -5,6 +5,8 @@ import { PostCreateModal } from '@/src/components/post/post-create-modal';
 import { NewsSection } from '@/src/components/news/news-section';
 import { PinnedPosts } from '@/src/components/feed/pinned-posts';
 import { PopularTags } from '@/src/components/tags/popular-tags';
+import { HotDiscussions } from '@/src/components/feed/hot-discussions';
+import { CommunityInfo } from '@/src/components/feed/community-info';
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useI18n } from '@/src/lib/i18n/context';
 import { useState } from 'react';
@@ -138,7 +140,9 @@ export default function Home() {
 
         {/* Sidebar - hidden on mobile */}
         <aside className="hidden w-64 shrink-0 space-y-4 lg:block">
+          <CommunityInfo />
           <PopularTags />
+          <HotDiscussions />
         </aside>
       </div>
 

@@ -4,6 +4,7 @@ import { SupabaseProvider } from "@/src/components/providers/supabase-provider";
 import { I18nProvider } from "@/src/lib/i18n/context";
 import { Navbar } from "@/src/components/layout/navbar";
 import { Footer } from "@/src/components/layout/footer";
+import { ScrollToTop } from "@/src/components/ui/scroll-to-top";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,6 +43,7 @@ export default function RootLayout({
             <Navbar />
             <div className="flex-1">{children}</div>
             <Footer />
+            <ScrollToTop />
           </I18nProvider>
         </SupabaseProvider>
       </body>
