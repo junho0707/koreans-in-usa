@@ -5,6 +5,7 @@ import { PostActions } from '@/src/components/post/post-actions';
 import { PostStats } from '@/src/components/post/post-stats';
 import { PollWidget } from '@/src/components/post/poll-widget';
 import { RelatedPosts } from '@/src/components/post/related-posts';
+import { ReadingProgress } from '@/src/components/ui/reading-progress';
 import { CommentThread } from '@/src/components/comments/comment-thread';
 import { CommentForm } from '@/src/components/comments/comment-form';
 import { CommentSortToggle } from '@/src/components/comments/comment-sort-toggle';
@@ -52,6 +53,8 @@ export default function PostPage() {
   if (!post) return <div className="mx-auto max-w-3xl px-4 py-8">Post not found</div>;
 
   return (
+    <>
+    <ReadingProgress />
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-4">
         <VoteButton
@@ -100,5 +103,6 @@ export default function PostPage() {
 
       <RelatedPosts postId={post.id} />
     </main>
+    </>
   );
 }

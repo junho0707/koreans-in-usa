@@ -3,8 +3,10 @@
 import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
 import { ShareButton } from '@/src/components/post/share-button';
+import { TableOfContents } from '@/src/components/post/table-of-contents';
 import { Markdown } from '@/src/components/ui/markdown';
 import { Avatar } from '@/src/components/ui/avatar';
+import { UserHoverCard } from '@/src/components/ui/user-hover-card';
 import { relativeTime } from '@/src/lib/relative-time';
 import { estimateReadTime } from '@/src/lib/read-time';
 import Link from 'next/link';
@@ -42,10 +44,12 @@ export function PostDetailView({ post }: Props) {
       <h1 className="mb-2 text-2xl font-bold">{post.title}</h1>
 
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-        <Link href={`/users/${post.authorId}`} className="flex items-center gap-1.5 hover:underline">
-          <Avatar name={post.authorDisplayName} size="sm" />
-          {post.authorDisplayName}
-        </Link>
+        <UserHoverCard userId={post.authorId} displayName={post.authorDisplayName}>
+          <Link href={`/users/${post.authorId}`} className="flex items-center gap-1.5 hover:underline">
+            <Avatar name={post.authorDisplayName} size="sm" />
+            {post.authorDisplayName}
+          </Link>
+        </UserHoverCard>
         <span title={new Date(post.createdAt).toLocaleString()}>{relativeTime(post.createdAt)}</span>
         <span>{estimateReadTime(post.body)}</span>
         <span>{post.score} vote{post.score !== 1 ? 's' : ''}</span>
@@ -68,6 +72,7 @@ export function PostDetailView({ post }: Props) {
         </div>
       )}
 
+      <TableOfContents content={post.body} />
       <Markdown content={post.body} />
     </div>
   );

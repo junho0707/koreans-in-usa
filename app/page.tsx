@@ -4,6 +4,7 @@ import { FeedList } from '@/src/components/feed-list';
 import { PostCreateModal } from '@/src/components/post/post-create-modal';
 import { NewsSection } from '@/src/components/news/news-section';
 import { PinnedPosts } from '@/src/components/feed/pinned-posts';
+import { AnnouncementBanner } from '@/src/components/feed/announcement-banner';
 import { PopularTags } from '@/src/components/tags/popular-tags';
 import { HotDiscussions } from '@/src/components/feed/hot-discussions';
 import { CommunityInfo } from '@/src/components/feed/community-info';
@@ -126,6 +127,7 @@ export default function Home() {
 
           {tab === 'usa' && (
             <>
+              <AnnouncementBanner />
               <PinnedPosts />
               <div className="mb-6">
                 <NewsSection />
