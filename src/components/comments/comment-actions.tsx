@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { ConfirmDialog } from '@/src/components/ui/confirm-dialog';
 import { useState } from 'react';
 
 type Props = {
@@ -41,6 +42,7 @@ export function CommentActions({ commentId, authorId, initialBody, onUpdated }: 
       onUpdated?.();
     }
     setDeleting(false);
+    setShowDelete(false);
   }
 
   if (editing) {
@@ -79,30 +81,22 @@ export function CommentActions({ commentId, authorId, initialBody, onUpdated }: 
       >
         Edit
       </button>
-      {showDelete ? (
-        <>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-xs text-red-600 hover:text-red-800"
-          >
-            {deleting ? '...' : 'Confirm'}
-          </button>
-          <button
-            onClick={() => setShowDelete(false)}
-            className="text-xs text-gray-500 hover:text-foreground"
-          >
-            Cancel
-          </button>
-        </>
-      ) : (
-        <button
-          onClick={() => setShowDelete(true)}
-          className="text-xs text-red-500 hover:text-red-700"
-        >
-          Delete
-        </button>
-      )}
+      <button
+        onClick={() => setShowDelete(true)}
+        className="text-xs text-red-500 hover:text-red-700"
+      >
+        Delete
+      </button>
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment?"
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDelete(false)}
+      />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FollowButton } from '@/src/components/follow/follow-button';
 import { Avatar } from '@/src/components/ui/avatar';
 import { ActivityHeatmap } from '@/src/components/ui/activity-heatmap';
+import { relativeTime } from '@/src/lib/relative-time';
 import { useAuth } from '@/src/components/providers/auth-context';
 
 type PublicUser = {
@@ -241,7 +242,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 <div className="mt-1 flex gap-3 text-xs text-gray-500">
                   <span>{post.score} votes</span>
                   <span>{post.commentCount} comments</span>
-                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                  <span title={new Date(post.createdAt).toLocaleString()}>{relativeTime(post.createdAt)}</span>
                 </div>
               </Link>
             ))
@@ -272,7 +273,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 <p className="mt-1 text-sm">{comment.body.length > 200 ? comment.body.slice(0, 200) + '...' : comment.body}</p>
                 <div className="mt-1 flex gap-3 text-xs text-gray-500">
                   <span>{comment.score} votes</span>
-                  <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+                  <span title={new Date(comment.createdAt).toLocaleString()}>{relativeTime(comment.createdAt)}</span>
                 </div>
               </Link>
             ))

@@ -22,6 +22,8 @@ function parseMarkdown(text: string): string {
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">$1</a>')
     // Bare URLs
     .replace(/(^|[\s(])(https?:\/\/[^\s)<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">$2</a>')
+    // @mentions
+    .replace(/@(\w[\w\s]*?\w)(?=\s|$|[.,!?])/g, '<span class="rounded bg-blue-50 px-1 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">@$1</span>')
     // Headers
     .replace(/^### (.+)$/gm, '<h3 class="mt-4 mb-2 text-lg font-semibold">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="mt-4 mb-2 text-xl font-semibold">$1</h2>')

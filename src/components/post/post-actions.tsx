@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { ConfirmDialog } from '@/src/components/ui/confirm-dialog';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -45,6 +46,7 @@ export function PostActions({ postId, postAuthorId, initialTitle, initialBody }:
       router.push('/');
     }
     setDeleting(false);
+    setShowDeleteConfirm(false);
   }
 
   if (editing) {
@@ -81,38 +83,31 @@ export function PostActions({ postId, postAuthorId, initialTitle, initialBody }:
   }
 
   return (
-    <div className="mt-4 flex items-center gap-3">
-      <button
-        onClick={() => setEditing(true)}
-        className="text-xs text-gray-500 hover:text-foreground"
-      >
-        Edit
-      </button>
-      {showDeleteConfirm ? (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-red-600">Delete this post?</span>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-xs font-medium text-red-600 hover:text-red-800"
-          >
-            {deleting ? 'Deleting...' : 'Yes'}
-          </button>
-          <button
-            onClick={() => setShowDeleteConfirm(false)}
-            className="text-xs text-gray-500 hover:text-foreground"
-          >
-            No
-          </button>
-        </div>
-      ) : (
+    <>
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={() => setEditing(true)}
+          className="text-xs text-gray-500 hover:text-foreground"
+        >
+          Edit
+        </button>
         <button
           onClick={() => setShowDeleteConfirm(true)}
           className="text-xs text-red-500 hover:text-red-700"
         >
           Delete
         </button>
-      )}
-    </div>
+      </div>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    </>
   );
 }

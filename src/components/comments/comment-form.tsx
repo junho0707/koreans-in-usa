@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/src/components/providers/auth-context';
+import { MentionInput } from '@/src/components/comments/mention-input';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -53,10 +54,10 @@ export function CommentForm({ postId, parentCommentId, onSubmitted, onCancel }: 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <textarea
+      <MentionInput
         value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder={parentCommentId ? 'Write a reply...' : 'Write a comment...'}
+        onChange={setBody}
+        placeholder={parentCommentId ? 'Write a reply... (type @ to mention)' : 'Write a comment... (type @ to mention)'}
         rows={3}
         className="w-full rounded-lg border px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
       />

@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { TagBadge } from '@/src/components/tags/tag-badge';
+import { Avatar } from '@/src/components/ui/avatar';
+import { EmptyState } from '@/src/components/ui/empty-state';
+import { relativeTime } from '@/src/lib/relative-time';
 
 type SearchItem = {
   id: number;
@@ -131,7 +134,10 @@ export default function SearchPage() {
           </p>
 
           {results.items.length === 0 ? (
-            <p className="text-gray-500">No posts found matching your search.</p>
+            <EmptyState
+              title="No results found"
+              description="Try different keywords or adjust your filters."
+            />
           ) : (
             <div className="space-y-4">
               {results.items.map((item) => (
@@ -152,11 +158,16 @@ export default function SearchPage() {
                         {item.bodySnippet}
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                        <span>{item.authorDisplayName}</span>
+                        <span className="flex items-center gap-1">
+                          <Avatar name={item.authorDisplayName} size="sm" />
+                          {item.authorDisplayName}
+                        </span>
                         <span>&middot;</span>
                         <span>{item.score} votes</span>
                         <span>&middot;</span>
                         <span>{item.commentCount} comments</span>
+                        <span>&middot;</span>
+                        <span title={new Date(item.createdAt).toLocaleString()}>{relativeTime(item.createdAt)}</span>
                         {item.regionId && (
                           <>
                             <span>&middot;</span>
