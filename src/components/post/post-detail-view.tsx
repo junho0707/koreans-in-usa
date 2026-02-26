@@ -4,6 +4,7 @@ import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
 import { ShareButton } from '@/src/components/post/share-button';
 import { TableOfContents } from '@/src/components/post/table-of-contents';
+import { ImageGallery } from '@/src/components/ui/image-gallery';
 import { Markdown } from '@/src/components/ui/markdown';
 import { Avatar } from '@/src/components/ui/avatar';
 import { UserHoverCard } from '@/src/components/ui/user-hover-card';
@@ -62,13 +63,8 @@ export function PostDetailView({ post }: Props) {
       </div>
 
       {post.imageUrl && (
-        <div className="mb-4 overflow-hidden rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.imageUrl}
-            alt={post.title}
-            className="max-h-[500px] w-full object-contain"
-          />
+        <div className="mb-4">
+          <ImageGallery images={[post.imageUrl]} alt={post.title} />
         </div>
       )}
 

@@ -58,12 +58,20 @@ export default function AdminDashboard() {
     <main className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Link
-          href="/admin/moderation"
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white"
-        >
-          Moderation Panel
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href="/admin/announcements"
+            className="rounded-lg border px-4 py-2 text-sm dark:border-gray-700"
+          >
+            Announcements
+          </Link>
+          <Link
+            href="/admin/moderation"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white"
+          >
+            Moderation Panel
+          </Link>
+        </div>
       </div>
 
       <h2 className="mb-3 text-lg font-semibold">Overview</h2>
