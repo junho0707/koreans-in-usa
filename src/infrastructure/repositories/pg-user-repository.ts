@@ -13,6 +13,7 @@ type UserRow = {
   supabase_uid: string;
   email: string | null;
   phone: string | null;
+  username: string | null;
   display_name: string;
   profile_state: string | null;
   country: string | null;
@@ -32,6 +33,7 @@ function toUser(row: UserRow): User {
     supabaseUid: row.supabase_uid,
     email: row.email,
     phone: row.phone,
+    username: row.username,
     displayName: row.display_name,
     profileState: row.profile_state,
     country: row.country,
@@ -46,7 +48,7 @@ function toUser(row: UserRow): User {
   };
 }
 
-const SELECT_FIELDS = `id, supabase_uid, email, phone, display_name, profile_state,
+const SELECT_FIELDS = `id, supabase_uid, email, phone, username, display_name, profile_state,
   country, city, interests, korean_x_identity, role, is_active, reputation, badge, created_at`;
 
 export class PgUserRepository implements UserRepository {
@@ -66,12 +68,36 @@ export class PgUserRepository implements UserRepository {
     return rows[0] ? toUser(rows[0]) : null;
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    const { rows } = await pool.query<UserRow>(
+      `SELECT ${SELECT_FIELDS} FROM users WHERE LOWER(username) = LOWER($1)`,
+      [username],
+    );
+    return rows[0] ? toUser(rows[0]) : null;
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const { rows } = await pool.query<UserRow>(
+      `SELECT ${SELECT_FIELDS} FROM users WHERE LOWER(email) = LOWER($1)`,
+      [email],
+    );
+    return rows[0] ? toUser(rows[0]) : null;
+  }
+
+  async isUsernameTaken(username: string): Promise<boolean> {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1`,
+      [username],
+    );
+    return rows.length > 0;
+  }
+
   async createFromAuth(input: CreateFromAuthInput): Promise<User> {
     const { rows } = await pool.query<UserRow>(
-      `INSERT INTO users (supabase_uid, email, phone, display_name)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO users (supabase_uid, email, phone, display_name, username)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING ${SELECT_FIELDS}`,
-      [input.supabaseUid, input.email, input.phone, input.displayName],
+      [input.supabaseUid, input.email, input.phone, input.displayName, input.username ?? null],
     );
     return toUser(rows[0]);
   }
@@ -84,6 +110,10 @@ export class PgUserRepository implements UserRepository {
     if (input.displayName !== undefined) {
       sets.push(`display_name = $${idx++}`);
       values.push(input.displayName);
+    }
+    if (input.username !== undefined) {
+      sets.push(`username = $${idx++}`);
+      values.push(input.username);
     }
     if (input.profileState !== undefined) {
       sets.push(`profile_state = $${idx++}`);

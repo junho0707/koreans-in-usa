@@ -10,6 +10,7 @@ type AppUser = {
   supabaseUid: string;
   email: string | null;
   phone: string | null;
+  username: string | null;
   displayName: string;
   role: string;
 };

@@ -2,24 +2,58 @@
 
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-type AuthMethod = 'email' | 'phone';
+type Tab = 'signin' | 'signup';
 
 export default function LoginPage() {
   const { supabase, user } = useAuth();
   const router = useRouter();
-  const [method, setMethod] = useState<AuthMethod>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [tab, setTab] = useState<Tab>('signin');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  if (user) {
-    router.push('/');
-    return null;
-  }
+  // Sign In fields
+  const [identifier, setIdentifier] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
+
+  // Sign Up fields
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpUsername, setSignUpUsername] = useState('');
+  const [usernameStatus, setUsernameStatus] = useState<{ available?: boolean; reason?: string } | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
+  // Live username availability check
+  const checkUsername = useCallback(async (username: string) => {
+    if (username.length < 3) {
+      setUsernameStatus(null);
+      return;
+    }
+    setCheckingUsername(true);
+    try {
+      const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      setUsernameStatus(data);
+    } catch {
+      setUsernameStatus(null);
+    }
+    setCheckingUsername(false);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (signUpUsername) checkUsername(signUpUsername);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [signUpUsername, checkUsername]);
 
   async function handleGoogleLogin() {
     setLoading(true);
@@ -30,48 +64,83 @@ export default function LoginPage() {
     });
     if (authError) {
       setError(authError.message);
+      setLoading(false);
     }
-    setLoading(false);
   }
 
-  async function handleEmailLogin(e: React.FormEvent) {
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
     setMessage('');
 
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/api/auth/callback` },
+    try {
+      let email = identifier.trim();
+
+      // If not an email, resolve username to email
+      if (!email.includes('@')) {
+        const res = await fetch('/api/auth/resolve-identifier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email }),
+        });
+        if (!res.ok) {
+          setError('User not found');
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        email = data.email;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: signInPassword,
+      });
+
+      if (authError) {
+        setError(authError.message);
+      }
+    } catch {
+      setError('Something went wrong');
+    }
+    setLoading(false);
+  }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    if (usernameStatus && !usernameStatus.available) {
+      setError(usernameStatus.reason ?? 'Username unavailable');
+      setLoading(false);
+      return;
+    }
+
+    const { error: authError } = await supabase.auth.signUp({
+      email: signUpEmail,
+      password: signUpPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        data: { username: signUpUsername.toLowerCase() },
+      },
     });
 
     if (authError) {
       setError(authError.message);
     } else {
-      setMessage('Check your email for the magic link!');
+      setMessage('Check your email to confirm your account!');
     }
     setLoading(false);
   }
 
-  async function handlePhoneLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setMessage('');
-
-    const { error: authError } = await supabase.auth.signInWithOtp({ phone });
-
-    if (authError) {
-      setError(authError.message);
-    } else {
-      router.push(`/login/verify?phone=${encodeURIComponent(phone)}`);
-    }
-    setLoading(false);
-  }
+  if (user) return null;
 
   return (
     <main className="mx-auto max-w-md px-4 py-16">
-      <h1 className="mb-2 text-2xl font-bold">Sign In</h1>
+      <h1 className="mb-2 text-2xl font-bold">Welcome</h1>
       <p className="mb-8 text-gray-500">Join the Korean community in the USA</p>
 
       {/* Google OAuth */}
@@ -98,76 +167,139 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Method toggle */}
+      {/* Tab toggle */}
       <div className="mb-6 flex gap-2">
         <button
-          onClick={() => setMethod('email')}
+          onClick={() => { setTab('signin'); setError(''); setMessage(''); }}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${
-            method === 'email'
+            tab === 'signin'
               ? 'bg-foreground text-background'
               : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
           }`}
         >
-          Email
+          Sign In
         </button>
         <button
-          onClick={() => setMethod('phone')}
+          onClick={() => { setTab('signup'); setError(''); setMessage(''); }}
           className={`rounded-lg px-4 py-2 text-sm font-medium ${
-            method === 'phone'
+            tab === 'signup'
               ? 'bg-foreground text-background'
               : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
           }`}
         >
-          Phone
+          Sign Up
         </button>
       </div>
 
-      {method === 'email' ? (
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+      {tab === 'signin' ? (
+        <form onSubmit={handleSignIn} className="space-y-4">
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium">
+            <label htmlFor="identifier" className="mb-1 block text-sm font-medium">
+              Email or Username
+            </label>
+            <input
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              required
+              className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+              placeholder="you@example.com or username"
+              autoComplete="username"
+            />
+          </div>
+          <div>
+            <label htmlFor="signin-password" className="mb-1 block text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="signin-password"
+              type="password"
+              value={signInPassword}
+              onChange={(e) => setSignInPassword(e.target.value)}
+              required
+              className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+              placeholder="Your password"
+              autoComplete="current-password"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-foreground px-4 py-2 text-background disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+          <p className="text-center text-sm">
+            <a href="/login/forgot-password" className="text-blue-600 hover:underline dark:text-blue-400">
+              Forgot password?
+            </a>
+          </p>
+        </form>
+      ) : (
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <div>
+            <label htmlFor="signup-email" className="mb-1 block text-sm font-medium">
               Email
             </label>
             <input
-              id="email"
+              id="signup-email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={signUpEmail}
+              onChange={(e) => setSignUpEmail(e.target.value)}
               required
               className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
               placeholder="you@example.com"
+              autoComplete="email"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-foreground px-4 py-2 text-background disabled:opacity-50"
-          >
-            {loading ? 'Sending...' : 'Send Magic Link'}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handlePhoneLogin} className="space-y-4">
           <div>
-            <label htmlFor="phone" className="mb-1 block text-sm font-medium">
-              Phone Number
+            <label htmlFor="signup-username" className="mb-1 block text-sm font-medium">
+              Username
             </label>
             <input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              id="signup-username"
+              type="text"
+              value={signUpUsername}
+              onChange={(e) => setSignUpUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               required
               className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
-              placeholder="+1234567890"
+              placeholder="your_username"
+              autoComplete="username"
+              minLength={3}
+              maxLength={20}
+            />
+            {checkingUsername && (
+              <p className="mt-1 text-xs text-gray-400">Checking...</p>
+            )}
+            {!checkingUsername && usernameStatus && signUpUsername.length >= 3 && (
+              <p className={`mt-1 text-xs ${usernameStatus.available ? 'text-green-600' : 'text-red-500'}`}>
+                {usernameStatus.available ? 'Available!' : usernameStatus.reason}
+              </p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="signup-password" className="mb-1 block text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="signup-password"
+              type="password"
+              value={signUpPassword}
+              onChange={(e) => setSignUpPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full rounded-lg border px-3 py-2 dark:border-gray-700 dark:bg-gray-900"
+              placeholder="At least 6 characters"
+              autoComplete="new-password"
             />
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (usernameStatus !== null && !usernameStatus.available)}
             className="w-full rounded-lg bg-foreground px-4 py-2 text-background disabled:opacity-50"
           >
-            {loading ? 'Sending...' : 'Send OTP'}
+            {loading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
       )}

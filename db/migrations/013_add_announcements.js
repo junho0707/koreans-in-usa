@@ -1,6 +1,5 @@
-/** @param {import('pg').Pool} pool */
-export async function up(pool) {
-  await pool.query(`
+exports.up = async (pgm) => {
+  pgm.sql(`
     CREATE TABLE IF NOT EXISTS announcements (
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL,
@@ -11,4 +10,8 @@ export async function up(pool) {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
-}
+};
+
+exports.down = async (pgm) => {
+  pgm.sql('DROP TABLE IF EXISTS announcements;');
+};

@@ -5,6 +5,7 @@ export type User = {
   supabaseUid: string;
   email: string | null;
   phone: string | null;
+  username: string | null;
   displayName: string;
   profileState: string | null;
   country: string | null;

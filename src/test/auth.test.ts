@@ -10,6 +10,7 @@ function createMockUser(overrides: Partial<User> = {}): User {
     supabaseUid: 'uid-123',
     email: 'test@example.com',
     phone: null,
+    username: null,
     displayName: 'test',
     profileState: null,
     country: null,
@@ -18,6 +19,8 @@ function createMockUser(overrides: Partial<User> = {}): User {
     koreanXIdentity: null,
     role: 'USER',
     isActive: true,
+    reputation: 0,
+    badge: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
@@ -32,12 +35,22 @@ function createMockRepo(existingUser?: User): UserRepository {
     async findById(id: number) {
       return stored?.id === id ? stored : null;
     },
+    async findByUsername(username: string) {
+      return stored?.username?.toLowerCase() === username.toLowerCase() ? stored : null;
+    },
+    async findByEmail(email: string) {
+      return stored?.email?.toLowerCase() === email.toLowerCase() ? stored : null;
+    },
+    async isUsernameTaken(username: string) {
+      return stored?.username?.toLowerCase() === username.toLowerCase();
+    },
     async createFromAuth(input) {
       stored = createMockUser({
         supabaseUid: input.supabaseUid,
         email: input.email,
         phone: input.phone,
         displayName: input.displayName,
+        username: input.username ?? null,
       });
       return stored;
     },
@@ -73,14 +86,26 @@ describe('get-or-create-user', () => {
     expect(user.supabaseUid).toBe('uid-new');
   });
 
-  it('creates new user with phone-derived display name', async () => {
+  it('creates new user with username as display name when provided', async () => {
     const repo = createMockRepo();
     const user = await getOrCreateUser(repo, {
-      supabaseUid: 'uid-phone',
-      email: null,
-      phone: '+11234567890',
+      supabaseUid: 'uid-new',
+      email: 'alice@example.com',
+      phone: null,
+      username: 'alice_k',
     });
-    expect(user.displayName).toBe('user_7890');
+    expect(user.displayName).toBe('alice_k');
+    expect(user.username).toBe('alice_k');
+  });
+
+  it('falls back to uid-derived name when no email or username', async () => {
+    const repo = createMockRepo();
+    const user = await getOrCreateUser(repo, {
+      supabaseUid: 'uid-abcdef12',
+      email: null,
+      phone: null,
+    });
+    expect(user.displayName).toBe('user_uid-abcd');
   });
 });
 

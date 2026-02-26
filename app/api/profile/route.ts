@@ -19,6 +19,7 @@ export async function GET() {
     supabaseUid: supabaseUser.id,
     email: supabaseUser.email ?? null,
     phone: supabaseUser.phone ?? null,
+    username: supabaseUser.user_metadata?.username,
   });
 
   return NextResponse.json({ user });
@@ -42,6 +43,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const updated = await updateProfile(repo, appUser.id, {
       displayName: body.displayName,
+      username: body.username,
       profileState: body.profileState,
       country: body.country,
       city: body.city,

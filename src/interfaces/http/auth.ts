@@ -16,6 +16,7 @@ export async function requireUserId(): Promise<number> {
     supabaseUid: user.id,
     email: user.email ?? null,
     phone: user.phone ?? null,
+    username: user.user_metadata?.username,
   });
 
   return appUser.id;

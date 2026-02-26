@@ -1,6 +1,5 @@
-/** @param {import('pg').Pool} pool */
-export async function up(pool) {
-  await pool.query(`
+exports.up = async (pgm) => {
+  pgm.sql(`
     CREATE TABLE IF NOT EXISTS polls (
       id SERIAL PRIMARY KEY,
       post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -29,4 +28,12 @@ export async function up(pool) {
     CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);
     CREATE INDEX IF NOT EXISTS idx_poll_votes_option ON poll_votes(option_id);
   `);
-}
+};
+
+exports.down = async (pgm) => {
+  pgm.sql(`
+    DROP TABLE IF EXISTS poll_votes;
+    DROP TABLE IF EXISTS poll_options;
+    DROP TABLE IF EXISTS polls;
+  `);
+};

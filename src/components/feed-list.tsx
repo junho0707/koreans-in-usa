@@ -49,7 +49,17 @@ export function FeedList({ endpoint }: { endpoint: string }) {
     }
 
     const response = await fetch(url.toString());
+    if (!response.ok) {
+      setHasLoaded(true);
+      setLoading(false);
+      return;
+    }
     const data = (await response.json()) as FeedResponse;
+    if (!data.items) {
+      setHasLoaded(true);
+      setLoading(false);
+      return;
+    }
     setItems((prev) => [...prev, ...data.items]);
     setCursor(data.nextCursor);
     setHasLoaded(true);

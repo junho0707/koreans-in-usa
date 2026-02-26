@@ -1,5 +1,9 @@
 import { createSupabaseServerClient } from '@/src/lib/supabase/server';
+import { PgUserRepository } from '@/src/infrastructure/repositories/pg-user-repository';
+import { getOrCreateUser } from '@/src/application/use-cases/user/get-or-create-user';
 import { NextRequest, NextResponse } from 'next/server';
+
+const repo = new PgUserRepository();
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -9,6 +13,21 @@ export async function GET(request: NextRequest) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Check if user has a username set
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        const appUser = await getOrCreateUser(repo, {
+          supabaseUid: supabaseUser.id,
+          email: supabaseUser.email ?? null,
+          phone: supabaseUser.phone ?? null,
+          username: supabaseUser.user_metadata?.username,
+        });
+
+        if (!appUser.username) {
+          return NextResponse.redirect(`${origin}/login/complete-profile`);
+        }
+      }
+
       return NextResponse.redirect(origin);
     }
   }

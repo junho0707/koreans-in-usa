@@ -5,10 +5,12 @@ export type CreateFromAuthInput = {
   email: string | null;
   phone: string | null;
   displayName: string;
+  username?: string;
 };
 
 export type UpdateProfileInput = {
   displayName?: string;
+  username?: string;
   profileState?: string | null;
   country?: string | null;
   city?: string | null;
@@ -37,6 +39,9 @@ export type UserCommentSummary = {
 export interface UserRepository {
   findBySupabaseUid(uid: string): Promise<User | null>;
   findById(id: number): Promise<User | null>;
+  findByUsername(username: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  isUsernameTaken(username: string): Promise<boolean>;
   createFromAuth(input: CreateFromAuthInput): Promise<User>;
   updateProfile(id: number, input: UpdateProfileInput): Promise<User>;
   getPostsByUser(userId: number, cursor?: number, limit?: number): Promise<{ items: UserPostSummary[]; nextCursor: number | null }>;
