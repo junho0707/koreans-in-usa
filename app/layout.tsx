@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SupabaseProvider } from "@/src/components/providers/supabase-provider";
+import { I18nProvider } from "@/src/lib/i18n/context";
 import { Navbar } from "@/src/components/layout/navbar";
 import { Footer } from "@/src/components/layout/footer";
 import "./globals.css";
@@ -37,9 +38,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
         <SupabaseProvider>
-          <Navbar />
-          <div className="flex-1">{children}</div>
-          <Footer />
+          <I18nProvider>
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </I18nProvider>
         </SupabaseProvider>
       </body>
     </html>

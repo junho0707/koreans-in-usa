@@ -3,6 +3,7 @@
 import { FeedList } from '@/src/components/feed-list';
 import { PostCreateModal } from '@/src/components/post/post-create-modal';
 import { NewsSection } from '@/src/components/news/news-section';
+import { PinnedPosts } from '@/src/components/feed/pinned-posts';
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -54,6 +55,7 @@ export default function Home() {
 
       {tab === 'usa' && (
         <>
+          <PinnedPosts />
           <div className="mb-8">
             <NewsSection />
           </div>
