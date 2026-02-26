@@ -2,6 +2,7 @@
 
 import { PostDetailView } from '@/src/components/post/post-detail-view';
 import { PostActions } from '@/src/components/post/post-actions';
+import { RelatedPosts } from '@/src/components/post/related-posts';
 import { CommentThread } from '@/src/components/comments/comment-thread';
 import { CommentForm } from '@/src/components/comments/comment-form';
 import { CommentSortToggle } from '@/src/components/comments/comment-sort-toggle';
@@ -88,6 +89,8 @@ export default function PostPage() {
         onReplySubmitted={loadPost}
         onAccept={handleAccept}
       />
+
+      <RelatedPosts postId={post.id} />
     </main>
   );
 }

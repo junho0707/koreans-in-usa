@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FollowButton } from '@/src/components/follow/follow-button';
 import { Avatar } from '@/src/components/ui/avatar';
+import { ActivityHeatmap } from '@/src/components/ui/activity-heatmap';
 import { useAuth } from '@/src/components/providers/auth-context';
 
 type PublicUser = {
@@ -65,6 +66,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   const [commentsCursor, setCommentsCursor] = useState<number | null>(null);
   const [followers, setFollowers] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [activity, setActivity] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -72,11 +74,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     Promise.all([
       fetch(`/api/users/${id}`).then((r) => (r.ok ? r.json() : Promise.reject())),
       fetch(`/api/users/${id}/followers`).then((r) => r.json()).catch(() => ({ followers: 0, following: 0 })),
+      fetch(`/api/users/${id}/activity`).then((r) => r.json()).catch(() => ({ activity: {} })),
     ])
-      .then(([userData, followData]) => {
+      .then(([userData, followData, activityData]) => {
         setUser(userData);
         setFollowers(followData.followers ?? 0);
         setFollowingCount(followData.following ?? 0);
+        setActivity(activityData.activity ?? {});
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -194,6 +198,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
           </div>
         )}
       </div>
+
+      {/* Activity heatmap */}
+      {Object.keys(activity).length > 0 && (
+        <div className="mb-6">
+          <ActivityHeatmap data={activity} />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b dark:border-gray-700">
