@@ -8,6 +8,7 @@ import { PgTagRepository } from '@/src/infrastructure/repositories/pg-tag-reposi
 import { requireUserId } from '@/src/interfaces/http/auth';
 import { checkRateLimit } from '@/src/interfaces/http/rate-limiter';
 import { badRequest, unauthorized, tooManyRequests } from '@/src/interfaces/http/response';
+import { pool } from '@/src/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 const repo = new PgCommunityRepository();
@@ -36,6 +37,21 @@ export async function POST(request: NextRequest) {
     // Auto-tag and add reputation in background (non-blocking)
     autoTagPost(tagRepo, created.id, body.title, body.body).catch(() => {});
     addReputation(userId, REP_POINTS.POST_CREATED).catch(() => {});
+
+    // Create poll if provided
+    if (body.poll && body.poll.question && body.poll.options?.length >= 2) {
+      const pollRes = await pool.query(
+        'INSERT INTO polls (post_id, question) VALUES ($1, $2) RETURNING id',
+        [created.id, body.poll.question]
+      );
+      const pollId = (pollRes.rows[0] as { id: number }).id;
+      for (let i = 0; i < body.poll.options.length; i++) {
+        await pool.query(
+          'INSERT INTO poll_options (poll_id, label, sort_order) VALUES ($1, $2, $3)',
+          [pollId, body.poll.options[i], i]
+        );
+      }
+    }
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

@@ -28,6 +28,9 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
+  const [showPoll, setShowPoll] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load draft on mount
@@ -83,6 +86,9 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
         scopeUsa,
         scopeRegion,
         regionId: scopeRegion ? regionId : null,
+        poll: showPoll && pollQuestion.trim() && pollOptions.filter((o) => o.trim()).length >= 2
+          ? { question: pollQuestion, options: pollOptions.filter((o) => o.trim()) }
+          : undefined,
       }),
     });
 
@@ -198,6 +204,58 @@ export function PostCreateModal({ onClose, defaultRegion }: Props) {
               <div className="mt-2 overflow-hidden rounded-lg">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imageUrl} alt="Preview" className="max-h-32 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowPoll(!showPoll)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              {showPoll ? 'Remove poll' : '+ Add poll'}
+            </button>
+            {showPoll && (
+              <div className="mt-2 space-y-2 rounded-lg border p-3 dark:border-gray-700">
+                <input
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  placeholder="Poll question"
+                  className="w-full rounded border px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+                />
+                {pollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      value={opt}
+                      onChange={(e) => {
+                        const updated = [...pollOptions];
+                        updated[idx] = e.target.value;
+                        setPollOptions(updated);
+                      }}
+                      placeholder={`Option ${idx + 1}`}
+                      className="flex-1 rounded border px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    {pollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                        className="text-xs text-red-500"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={() => setPollOptions([...pollOptions, ''])}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    + Add option
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -17,6 +17,9 @@ export function CommunityInfo() {
         <Link href="/tags" className="block hover:text-foreground">
           Browse Topics
         </Link>
+        <Link href="/leaderboard" className="block hover:text-foreground">
+          Leaderboard
+        </Link>
       </div>
     </div>
   );
