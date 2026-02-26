@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/src/components/providers/auth-context';
 import { NotificationBell } from '@/src/components/notifications/notification-bell';
+import { ThemeToggle } from '@/src/components/layout/theme-toggle';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -41,6 +42,7 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          <ThemeToggle />
           {loading ? null : user ? (
             <div className="flex items-center gap-3">
               <NotificationBell />

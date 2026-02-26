@@ -2,6 +2,7 @@
 
 import { PostDetail } from '@/src/application/dto/post-detail';
 import { BookmarkButton } from '@/src/components/bookmark/bookmark-button';
+import { ShareButton } from '@/src/components/post/share-button';
 import Link from 'next/link';
 
 type Props = {
@@ -42,7 +43,19 @@ export function PostDetailView({ post }: Props) {
         <span>{post.score} vote{post.score !== 1 ? 's' : ''}</span>
         <span>{post.commentCount} comment{post.commentCount !== 1 ? 's' : ''}</span>
         <BookmarkButton postId={post.id} />
+        <ShareButton postId={post.id} title={post.title} />
       </div>
+
+      {post.imageUrl && (
+        <div className="mb-4 overflow-hidden rounded-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.imageUrl}
+            alt={post.title}
+            className="max-h-[500px] w-full object-contain"
+          />
+        </div>
+      )}
 
       <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
         {post.body}

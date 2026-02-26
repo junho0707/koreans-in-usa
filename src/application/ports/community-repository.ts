@@ -10,6 +10,7 @@ export type CreatePostCommand = {
   regionId?: RegionId | null;
   stateCode?: string | null;
   metroArea?: string | null;
+  imageUrl?: string | null;
 };
 
 export type CreateCommentCommand = {

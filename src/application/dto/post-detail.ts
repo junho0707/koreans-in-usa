@@ -18,6 +18,7 @@ export type PostDetail = {
   acceptedCommentId: number | null;
   tags: string[];
   viewerVoted: boolean;
+  imageUrl: string | null;
   createdAt: string;
   comments: CommentNode[];
 };

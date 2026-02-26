@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       regionId: body.regionId ?? null,
       stateCode: body.stateCode ?? null,
       metroArea: body.metroArea ?? null,
+      imageUrl: body.imageUrl ?? null,
     });
 
     // Auto-tag and add reputation in background (non-blocking)
