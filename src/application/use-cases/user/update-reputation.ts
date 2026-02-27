@@ -2,7 +2,7 @@ import { pool } from '@/src/lib/db';
 import { getBadgeForReputation } from '@/src/domain/services/reputation';
 
 export async function addReputation(userId: number, points: number): Promise<void> {
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<{ reputation: number }>(
     'UPDATE users SET reputation = reputation + $2 WHERE id = $1 RETURNING reputation',
     [userId, points],
   );

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { NewsCard } from '@/src/components/news/news-card';
 import { PostCard } from '@/src/components/post/post-card';
 import { FeedList } from '@/src/components/feed-list';
 import { useAuth } from '@/src/components/providers/auth-context';
@@ -29,20 +28,19 @@ type RegionSummary = {
   posts: RegionHeadline[];
 };
 
-type NewsItem = {
+type CommunityPreview = {
   id: number;
-  title: string;
-  summary: string | null;
-  url: string;
-  source: string;
-  publishedAt: string;
-  tags: string[];
+  name: string;
+  slug: string;
+  description: string | null;
+  memberCount: number;
+  scope: string;
+  privacy: string;
 };
 
 type LandingData = {
   usaPosts: FeedItem[];
   regionPosts: RegionSummary[];
-  news: NewsItem[];
 };
 
 const REGION_ORDER = ['NE', 'S', 'MW', 'W'];
@@ -57,89 +55,167 @@ export default function Home() {
   const { user } = useAuth();
   const { t } = useI18n();
   const [data, setData] = useState<LandingData | null>(null);
+  const [communities, setCommunities] = useState<CommunityPreview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/feed/landing')
-      .then((r) => r.json())
-      .then((d) => setData(d))
+    Promise.all([
+      fetch('/api/feed/landing').then((r) => r.json()),
+      fetch('/api/communities/popular?limit=6').then((r) => r.json()),
+    ])
+      .then(([landingData, commData]) => {
+        setData(landingData);
+        setCommunities(Array.isArray(commData) ? commData : []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  // Split usaPosts into Q&A and Tips
+  const qaPosts = data?.usaPosts.filter((p) => p.type === 'QA').slice(0, 5) ?? [];
+  const tipPosts = data?.usaPosts.filter((p) => p.type === 'TIP').slice(0, 5) ?? [];
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
-      {/* Card 1: US Feed */}
-      <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
-        <div className="mb-4 flex items-center justify-between">
-          <Link href="/feed/usa" className="text-xl font-bold hover:underline">
-            {t('landing.usFeed')}
-          </Link>
-          <Link
-            href="/feed/usa"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {t('landing.viewAll')}
-          </Link>
+    <main className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+      {/* Hero (logged out only) */}
+      {!user && (
+        <section className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
+          <h1 className="mb-2 text-3xl font-bold">Your Korean Community in the USA</h1>
+          <p className="mb-6 text-blue-100">
+            Ask questions, share tips, and connect with fellow Koreans across America.
+          </p>
+          <div className="flex gap-3">
+            <Link
+              href="/login"
+              className="rounded-lg bg-white px-6 py-2.5 font-medium text-blue-700 hover:bg-blue-50"
+            >
+              Sign Up
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-lg border border-white/30 px-6 py-2.5 font-medium hover:bg-white/10"
+            >
+              Log In
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Q&A + Tips side by side */}
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Latest Q&A */}
+        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Latest Q&A</h2>
+            <Link
+              href="/feed/usa"
+              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            >
+              View all →
+            </Link>
+          </div>
+          {loading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
+          {qaPosts.length > 0 ? (
+            <div className="space-y-3">
+              {qaPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/posts/${post.id}`}
+                  className="block rounded-md p-3 transition hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                >
+                  <h3 className="text-sm font-medium">{post.title}</h3>
+                  <div className="mt-1 flex gap-3 text-xs text-gray-500">
+                    <span>{post.score} votes</span>
+                    <span>{post.commentCount} answers</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            !loading && <p className="text-sm text-gray-400">No questions yet</p>
+          )}
         </div>
 
-        {loading && (
-          <p className="text-sm text-gray-500">{t('common.loading')}</p>
-        )}
-
-        {data && data.news.length > 0 && (
-          <div className="mb-6">
-            <h3 className="mb-3 text-sm font-semibold uppercase text-gray-500">
-              {t('landing.news')}
-            </h3>
+        {/* Latest Tips */}
+        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Latest Tips</h2>
+            <Link
+              href="/feed/usa"
+              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            >
+              View all →
+            </Link>
+          </div>
+          {loading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
+          {tipPosts.length > 0 ? (
             <div className="space-y-3">
-              {data.news.map((item) => (
-                <NewsCard key={item.id} {...item} publishedAt={item.publishedAt} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {data && data.usaPosts.length > 0 && (
-          <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase text-gray-500">
-              {t('landing.topPosts')}
-            </h3>
-            <div className="grid gap-3">
-              {data.usaPosts.map((post) => (
-                <PostCard
+              {tipPosts.map((post) => (
+                <Link
                   key={post.id}
-                  id={post.id}
-                  title={post.title}
-                  body={post.body}
-                  type={post.type}
-                  score={post.score}
-                  commentCount={post.commentCount}
-                  regionId={post.regionId}
-                  createdAt={post.createdAt}
-                  authorId={post.authorId}
-                  authorDisplayName={post.authorDisplayName}
-                />
+                  href={`/posts/${post.id}`}
+                  className="block rounded-md p-3 transition hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                >
+                  <h3 className="text-sm font-medium">{post.title}</h3>
+                  <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">
+                    {post.body.slice(0, 120)}
+                  </p>
+                </Link>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            !loading && <p className="text-sm text-gray-400">No tips yet</p>
+          )}
+        </div>
       </section>
 
-      {/* Card 2: By Region */}
+      {/* Popular Communities */}
+      {communities.length > 0 && (
+        <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Popular Communities</h2>
+            <Link
+              href="/communities"
+              className="text-sm text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Browse all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {communities.map((c) => (
+              <Link
+                key={c.id}
+                href={`/communities/${c.slug}`}
+                className="rounded-lg border border-gray-100 p-4 transition hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
+              >
+                <h3 className="font-medium">{c.name}</h3>
+                {c.description && (
+                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                    {c.description}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-800">
+                    {c.scope === 'USA' ? 'USA' : 'Regional'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {c.memberCount} members
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* By Region */}
       <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
-        <h2 className="mb-4 text-xl font-bold">{t('landing.byRegion')}</h2>
-
-        {loading && (
-          <p className="text-sm text-gray-500">{t('common.loading')}</p>
-        )}
-
+        <h2 className="mb-4 text-lg font-bold">{t('landing.byRegion')}</h2>
+        {loading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
         {data && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {REGION_ORDER.map((regionId) => {
-              const region = data.regionPosts.find(
-                (r) => r.regionId === regionId,
-              );
+              const region = data.regionPosts.find((r) => r.regionId === regionId);
               const slug = region?.slug ?? regionId.toLowerCase();
               const name = region?.name ?? REGION_LABELS[regionId] ?? regionId;
               return (
@@ -176,7 +252,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* Card 3: Personal Feed (signed-in only) */}
+      {/* Personal Feed (signed-in only) */}
       {user && (
         <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
           <h2 className="mb-4 text-xl font-bold">{t('landing.yourFeed')}</h2>

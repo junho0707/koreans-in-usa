@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return tooManyRequests('Too many votes. Try again later.');
     }
     const body = await request.json();
-    const targetType = body.targetType as string;
+    const targetType = body.targetType as 'POST' | 'COMMENT';
     const targetId = Number(body.targetId);
 
     const result = await toggleVote(repo, {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         const table = targetType === 'POST' ? 'posts' : 'comments';
         const { rows } = await pool.query<Record<string, unknown>>(`SELECT author_id FROM ${table} WHERE id = $1`, [targetId]);
         if (rows[0] && Number(rows[0].author_id) !== userId) {
-          const delta = result.voted ? points : -points;
+          const delta = result.active ? points : -points;
           await addReputation(Number(rows[0].author_id), delta);
         }
       } catch {}

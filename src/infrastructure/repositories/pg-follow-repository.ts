@@ -33,7 +33,7 @@ export class PgFollowRepository implements FollowRepository {
   }
 
   async getCounts(userId: number): Promise<FollowCounts> {
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<{ followers: number; following: number }>(
       `SELECT
         (SELECT COUNT(*)::int FROM follows WHERE following_id = $1) AS followers,
         (SELECT COUNT(*)::int FROM follows WHERE follower_id = $1) AS following`,
@@ -70,7 +70,7 @@ export class PgFollowRepository implements FollowRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items = resultRows.map((r: Record<string, unknown>) => ({
+    const items = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.user_id),
       displayName: String(r.display_name),
       createdAt: String(r.created_at),
@@ -105,7 +105,7 @@ export class PgFollowRepository implements FollowRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items = resultRows.map((r: Record<string, unknown>) => ({
+    const items = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.user_id),
       displayName: String(r.display_name),
       createdAt: String(r.created_at),

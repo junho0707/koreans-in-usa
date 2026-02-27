@@ -182,7 +182,7 @@ export class PgUserRepository implements UserRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: UserPostSummary[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: UserPostSummary[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       title: String(r.title),
       type: String(r.type),
@@ -223,7 +223,7 @@ export class PgUserRepository implements UserRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: UserCommentSummary[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: UserCommentSummary[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       postId: Number(r.post_id),
       postTitle: String(r.post_title),

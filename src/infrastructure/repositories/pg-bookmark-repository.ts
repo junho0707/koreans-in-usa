@@ -68,7 +68,7 @@ export class PgBookmarkRepository implements BookmarkRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: BookmarkedPost[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: BookmarkedPost[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       postId: Number(r.post_id),
       title: String(r.title),

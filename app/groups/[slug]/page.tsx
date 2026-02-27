@@ -2,7 +2,7 @@
 
 import { FeedList } from '@/src/components/feed-list';
 import { PostCreateModal } from '@/src/components/post/post-create-modal';
-import { NewsSection } from '@/src/components/news/news-section';
+
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
@@ -71,10 +71,6 @@ function RegionContent() {
             {opt.label}
           </button>
         ))}
-      </div>
-
-      <div className="mb-8">
-        <NewsSection endpoint={`/api/news?tag=${slug}&limit=5`} />
       </div>
 
       <FeedList endpoint={endpoint} />

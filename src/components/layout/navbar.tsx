@@ -15,10 +15,8 @@ export function Navbar() {
 
   const NAV_LINKS = [
     { href: '/', label: t('nav.home') },
-    { href: '/groups/northeast', label: t('nav.northeast') },
-    { href: '/groups/south', label: t('nav.south') },
-    { href: '/groups/midwest', label: t('nav.midwest') },
-    { href: '/groups/west', label: t('nav.west') },
+    { href: '/feed/usa', label: 'Q&A' },
+    { href: '/communities', label: 'Communities' },
     { href: '/search', label: t('nav.search') },
   ];
 
@@ -50,12 +48,6 @@ export function Navbar() {
           {loading ? null : user ? (
             <div className="flex items-center gap-3">
               <NotificationBell />
-              <Link
-                href="/messages"
-                className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
-              >
-                {t('nav.messages')}
-              </Link>
               <Link
                 href="/bookmarks"
                 className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
@@ -127,9 +119,6 @@ export function Navbar() {
           {!loading && (
             user ? (
               <>
-                <Link href="/messages" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
-                  {t('nav.messages')}
-                </Link>
                 <Link href="/bookmarks" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
                   {t('nav.saved')}
                 </Link>

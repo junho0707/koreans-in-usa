@@ -60,7 +60,7 @@ export class PgNotificationRepository implements NotificationRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: Notification[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: Notification[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       userId: Number(r.user_id),
       type: String(r.type) as Notification['type'],
@@ -79,7 +79,7 @@ export class PgNotificationRepository implements NotificationRepository {
   }
 
   async getUnreadCount(userId: number): Promise<number> {
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<{ count: number }>(
       'SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = FALSE',
       [userId],
     );

@@ -37,7 +37,7 @@ export class PgMessageRepository implements MessageRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: Conversation[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: Conversation[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       otherUserId: Number(r.other_user_id),
       otherDisplayName: String(r.other_display_name),
@@ -54,14 +54,14 @@ export class PgMessageRepository implements MessageRepository {
     const [a, b] = userAId < userBId ? [userAId, userBId] : [userBId, userAId];
 
     // Try to find existing
-    const { rows: existing } = await pool.query(
+    const { rows: existing } = await pool.query<{ id: number }>(
       'SELECT id FROM conversations WHERE user_a_id = $1 AND user_b_id = $2',
       [a, b],
     );
     if (existing[0]) return Number(existing[0].id);
 
     // Create new
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<{ id: number }>(
       'INSERT INTO conversations (user_a_id, user_b_id) VALUES ($1, $2) ON CONFLICT (user_a_id, user_b_id) DO UPDATE SET user_a_id = conversations.user_a_id RETURNING id',
       [a, b],
     );
@@ -101,7 +101,7 @@ export class PgMessageRepository implements MessageRepository {
     const hasMore = rows.length > safeLimit;
     const resultRows = hasMore ? rows.slice(0, safeLimit) : rows;
 
-    const items: Message[] = resultRows.map((r: Record<string, unknown>) => ({
+    const items: Message[] = (resultRows as Record<string, unknown>[]).map((r) => ({
       id: Number(r.id),
       conversationId: Number(r.conversation_id),
       senderId: Number(r.sender_id),
@@ -135,7 +135,7 @@ export class PgMessageRepository implements MessageRepository {
       [conversationId],
     );
 
-    const r = rows[0];
+    const r = rows[0] as Record<string, unknown>;
     return {
       id: Number(r.id),
       conversationId: Number(r.conversation_id),
@@ -155,7 +155,7 @@ export class PgMessageRepository implements MessageRepository {
   }
 
   async getUnreadTotal(userId: number): Promise<number> {
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<{ count: number }>(
       `SELECT COUNT(*)::int AS count FROM messages m
        JOIN conversations c ON c.id = m.conversation_id
        WHERE (c.user_a_id = $1 OR c.user_b_id = $1)

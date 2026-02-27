@@ -1,7 +1,6 @@
 import { FeedRepository } from '@/src/application/ports/feed-repository';
 import {
   LandingSummary,
-  NewsItemSummary,
   RegionSummary,
 } from '@/src/application/dto/landing-summary';
 import { FeedItem } from '@/src/domain/entities/feed-item';
@@ -139,9 +138,9 @@ export class PgFeedRepository implements FeedRepository {
         WHERE p.scope_region = TRUE AND p.region_id IS NOT NULL
       ),
       candidate_ids AS (
-        SELECT rp.id FROM recent_posts rp WHERE rp.scope_usa = TRUE AND rp.is_hidden = FALSE
+        SELECT rp.id FROM recent_posts rp WHERE rp.scope_usa = TRUE AND rp.is_hidden = FALSE AND rp.community_id IS NULL
         UNION
-        SELECT rr.id FROM region_ranked rr JOIN recent_posts rp ON rp.id = rr.id WHERE region_rank <= 3 AND rp.is_hidden = FALSE
+        SELECT rr.id FROM region_ranked rr JOIN recent_posts rp ON rp.id = rr.id WHERE region_rank <= 3 AND rp.is_hidden = FALSE AND rp.community_id IS NULL
       )
       SELECT p.id,
              p.title,
@@ -206,7 +205,7 @@ export class PgFeedRepository implements FeedRepository {
     const { where, values } = buildCommonFilters(filters, 2);
     queryValues.push(...values);
 
-    const whereSql = [`p.scope_region = TRUE`, `r.slug = $1`, `p.is_hidden = FALSE`, ...where].join(' AND ');
+    const whereSql = [`p.scope_region = TRUE`, `r.slug = $1`, `p.is_hidden = FALSE`, `p.community_id IS NULL`, ...where].join(' AND ');
     const recentOnly = sort === 'top12h' ? `AND p.created_at >= NOW() - INTERVAL '12 hours'` : '';
     const orderBy =
       sort === 'new'
@@ -295,6 +294,7 @@ export class PgFeedRepository implements FeedRepository {
       LEFT JOIN post_scores ps ON ps.target_id = p.id
       WHERE p.is_hidden = FALSE
         AND p.type IN ('QA', 'TIP')
+        AND p.community_id IS NULL
         AND p.created_at >= NOW() - INTERVAL '7 days'
       ORDER BY COALESCE(ps.score, 0) DESC, p.created_at DESC
       LIMIT 5
@@ -307,26 +307,19 @@ export class PgFeedRepository implements FeedRepository {
       JOIN regions r ON r.id = p.region_id
       WHERE p.is_hidden = FALSE
         AND p.scope_region = TRUE
+        AND p.community_id IS NULL
         AND p.created_at >= NOW() - INTERVAL '7 days'
     `;
 
-    const newsSql = `
-      SELECT id, title, summary, url, source, published_at, tags
-      FROM news_items
-      ORDER BY published_at DESC
-      LIMIT 3
-    `;
-
-    const [usaResult, regionResult, newsResult] = await Promise.all([
+    const [usaResult, regionResult] = await Promise.all([
       pool.query(usaPostsSql),
       pool.query(regionPostsSql),
-      pool.query(newsSql),
     ]);
 
-    const usaPosts: FeedItem[] = usaResult.rows.map((r: FeedRow) => toFeedItem(r));
+    const usaPosts: FeedItem[] = (usaResult.rows as FeedRow[]).map((r) => toFeedItem(r));
 
     const regionMap = new Map<string, RegionSummary>();
-    for (const r of regionResult.rows) {
+    for (const r of regionResult.rows as Record<string, unknown>[]) {
       if (Number(r.rn) > 3) continue;
       const key = String(r.region_id);
       if (!regionMap.has(key)) {
@@ -344,18 +337,6 @@ export class PgFeedRepository implements FeedRepository {
     }
     const regionPosts: RegionSummary[] = Array.from(regionMap.values());
 
-    const news: NewsItemSummary[] = newsResult.rows.map(
-      (r: Record<string, unknown>) => ({
-        id: Number(r.id),
-        title: String(r.title),
-        summary: r.summary ? String(r.summary) : null,
-        url: String(r.url),
-        source: String(r.source),
-        publishedAt: String(r.published_at),
-        tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
-      }),
-    );
-
-    return { usaPosts, regionPosts, news };
+    return { usaPosts, regionPosts };
   }
 }

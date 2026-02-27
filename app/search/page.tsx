@@ -178,7 +178,7 @@ export default function SearchPage() {
                       {item.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {item.tags.map((tag) => (
-                            <TagBadge key={tag} slug={tag} />
+                            <TagBadge key={tag} tag={tag} />
                           ))}
                         </div>
                       )}

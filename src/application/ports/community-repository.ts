@@ -11,6 +11,7 @@ export type CreatePostCommand = {
   stateCode?: string | null;
   metroArea?: string | null;
   imageUrl?: string | null;
+  communityId?: number | null;
 };
 
 export type CreateCommentCommand = {

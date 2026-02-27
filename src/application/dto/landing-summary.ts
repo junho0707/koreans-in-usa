@@ -12,18 +12,7 @@ export type RegionSummary = {
   posts: RegionHeadline[];
 };
 
-export type NewsItemSummary = {
-  id: number;
-  title: string;
-  summary: string | null;
-  url: string;
-  source: string;
-  publishedAt: string;
-  tags: string[];
-};
-
 export type LandingSummary = {
   usaPosts: FeedItem[];
   regionPosts: RegionSummary[];
-  news: NewsItemSummary[];
 };

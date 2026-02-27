@@ -14,10 +14,10 @@ export async function GET(
       `SELECT
         u.id, u.display_name, u.reputation,
         CASE
-          WHEN u.reputation >= 1000 THEN 'legend'
-          WHEN u.reputation >= 500 THEN 'expert'
-          WHEN u.reputation >= 100 THEN 'active'
-          WHEN u.reputation >= 20 THEN 'contributor'
+          WHEN u.reputation >= 500 THEN 'leader'
+          WHEN u.reputation >= 200 THEN 'expert'
+          WHEN u.reputation >= 50 THEN 'active'
+          WHEN u.reputation >= 10 THEN 'contributor'
           ELSE 'newcomer'
         END AS badge,
         COALESCE(pc.cnt, 0)::int AS post_count,
