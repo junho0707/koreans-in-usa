@@ -12,7 +12,19 @@ export type RegionSummary = {
   posts: RegionHeadline[];
 };
 
+export type CommunityPreview = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  memberCount: number;
+  scope: string;
+  privacy: string;
+};
+
 export type LandingSummary = {
-  usaPosts: FeedItem[];
+  usaQA: FeedItem[];
+  usaTips: FeedItem[];
   regionPosts: RegionSummary[];
+  publicCommunities: CommunityPreview[];
 };

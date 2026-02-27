@@ -2,6 +2,7 @@ import { FeedRepository } from '@/src/application/ports/feed-repository';
 import {
   LandingSummary,
   RegionSummary,
+  CommunityPreview,
 } from '@/src/application/dto/landing-summary';
 import { FeedItem } from '@/src/domain/entities/feed-item';
 import { FeedFilters, FeedPage, normalizeLimit } from '@/src/domain/feed';
@@ -278,7 +279,7 @@ export class PgFeedRepository implements FeedRepository {
   }
 
   async getLandingSummary(): Promise<LandingSummary> {
-    const usaPostsSql = `
+    const usaQASql = `
       WITH post_scores AS (
         SELECT target_id, COUNT(*)::int AS score
         FROM votes WHERE target_type = 'POST' GROUP BY target_id
@@ -293,7 +294,31 @@ export class PgFeedRepository implements FeedRepository {
       LEFT JOIN users u ON u.id = p.author_id
       LEFT JOIN post_scores ps ON ps.target_id = p.id
       WHERE p.is_hidden = FALSE
-        AND p.type IN ('QA', 'TIP')
+        AND p.type = 'QA'
+        AND p.scope_usa = TRUE
+        AND p.community_id IS NULL
+        AND p.created_at >= NOW() - INTERVAL '7 days'
+      ORDER BY COALESCE(ps.score, 0) DESC, p.created_at DESC
+      LIMIT 5
+    `;
+
+    const usaTipsSql = `
+      WITH post_scores AS (
+        SELECT target_id, COUNT(*)::int AS score
+        FROM votes WHERE target_type = 'POST' GROUP BY target_id
+      )
+      SELECT p.id, p.title, p.body, p.type,
+             p.author_id, u.display_name AS author_display_name,
+             p.created_at, p.region_id, p.state_code, p.metro_area,
+             p.scope_usa, p.scope_region,
+             COALESCE(ps.score, 0)::int AS score,
+             (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id)::int AS comment_count
+      FROM posts p
+      LEFT JOIN users u ON u.id = p.author_id
+      LEFT JOIN post_scores ps ON ps.target_id = p.id
+      WHERE p.is_hidden = FALSE
+        AND p.type = 'TIP'
+        AND p.scope_usa = TRUE
         AND p.community_id IS NULL
         AND p.created_at >= NOW() - INTERVAL '7 days'
       ORDER BY COALESCE(ps.score, 0) DESC, p.created_at DESC
@@ -311,12 +336,23 @@ export class PgFeedRepository implements FeedRepository {
         AND p.created_at >= NOW() - INTERVAL '7 days'
     `;
 
-    const [usaResult, regionResult] = await Promise.all([
-      pool.query(usaPostsSql),
+    const communitiesSql = `
+      SELECT id, name, slug, description, member_count, scope, privacy
+      FROM communities
+      WHERE is_active = TRUE AND privacy = 'PUBLIC'
+      ORDER BY member_count DESC
+      LIMIT 6
+    `;
+
+    const [qaResult, tipsResult, regionResult, commResult] = await Promise.all([
+      pool.query(usaQASql),
+      pool.query(usaTipsSql),
       pool.query(regionPostsSql),
+      pool.query(communitiesSql),
     ]);
 
-    const usaPosts: FeedItem[] = (usaResult.rows as FeedRow[]).map((r) => toFeedItem(r));
+    const usaQA: FeedItem[] = (qaResult.rows as FeedRow[]).map((r) => toFeedItem(r));
+    const usaTips: FeedItem[] = (tipsResult.rows as FeedRow[]).map((r) => toFeedItem(r));
 
     const regionMap = new Map<string, RegionSummary>();
     for (const r of regionResult.rows as Record<string, unknown>[]) {
@@ -337,6 +373,16 @@ export class PgFeedRepository implements FeedRepository {
     }
     const regionPosts: RegionSummary[] = Array.from(regionMap.values());
 
-    return { usaPosts, regionPosts };
+    const publicCommunities: CommunityPreview[] = (commResult.rows as Record<string, unknown>[]).map((r) => ({
+      id: Number(r.id),
+      name: r.name as string,
+      slug: r.slug as string,
+      description: (r.description as string) || null,
+      memberCount: Number(r.member_count),
+      scope: r.scope as string,
+      privacy: r.privacy as string,
+    }));
+
+    return { usaQA, usaTips, regionPosts, publicCommunities };
   }
 }
