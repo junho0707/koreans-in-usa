@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
-    const { rows } = await pool.query(
+    const { rows } = await pool.query<Record<string, unknown>>(
       `SELECT id, display_name FROM users
        WHERE is_active = TRUE AND LOWER(display_name) LIKE $1
        ORDER BY display_name
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       [`%${query.toLowerCase()}%`],
     );
 
-    const users = rows.map((r: Record<string, unknown>) => ({
+    const users = rows.map((r) => ({
       id: Number(r.id),
       displayName: String(r.display_name),
     }));

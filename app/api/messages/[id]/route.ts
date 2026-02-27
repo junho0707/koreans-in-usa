@@ -54,7 +54,7 @@ export async function POST(
     // Notify receiver (non-blocking)
     (async () => {
       try {
-        const { rows } = await pool.query(
+        const { rows } = await pool.query<Record<string, unknown>>(
           'SELECT user_a_id, user_b_id FROM conversations WHERE id = $1',
           [conversationId],
         );

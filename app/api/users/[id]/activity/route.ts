@@ -30,11 +30,10 @@ export async function GET(_request: NextRequest, { params }: Params) {
       ORDER BY day
     `;
 
-    const { rows } = await pool.query(sql, [userId]);
+    const { rows } = await pool.query<Record<string, unknown>>(sql, [userId]);
 
     const activity: Record<string, number> = {};
-    for (const row of rows) {
-      const r = row as Record<string, unknown>;
+    for (const r of rows) {
       const day = new Date(String(r.day)).toISOString().split('T')[0];
       activity[day] = Number(r.count);
     }

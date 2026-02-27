@@ -113,6 +113,12 @@ export default function ProfilePage() {
             <span className="text-sm text-gray-500">Display Name</span>
             <p className="font-medium">{user.displayName}</p>
           </div>
+          {user.username && (
+            <div>
+              <span className="text-sm text-gray-500">Username</span>
+              <p>@{user.username}</p>
+            </div>
+          )}
           {user.email && (
             <div>
               <span className="text-sm text-gray-500">Email</span>

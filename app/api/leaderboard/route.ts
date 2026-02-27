@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       dateFilter = "AND u.created_at >= NOW() - INTERVAL '30 days'";
     }
 
-    const { rows } = await pool.query(`
+    const { rows } = await pool.query<Record<string, unknown>>(`
       SELECT
         u.id,
         u.display_name,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       LIMIT 50
     `);
 
-    const items = (rows as Record<string, unknown>[]).map((r) => ({
+    const items = rows.map((r) => ({
       id: Number(r.id),
       displayName: String(r.display_name),
       reputation: Number(r.reputation),

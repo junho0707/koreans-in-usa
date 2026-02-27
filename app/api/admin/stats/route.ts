@@ -12,7 +12,7 @@ export async function GET() {
     const user = await userRepo.findById(userId);
     if (!user || user.role !== 'ADMIN') return unauthorized('Admin access required');
 
-    const { rows } = await pool.query(`
+    const { rows } = await pool.query<Record<string, unknown>>(`
       SELECT
         (SELECT COUNT(*)::int FROM users WHERE is_active = TRUE) AS total_users,
         (SELECT COUNT(*)::int FROM posts WHERE is_hidden = FALSE) AS total_posts,

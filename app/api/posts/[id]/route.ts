@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const postId = Number(id);
 
     // Verify ownership
-    const { rows } = await pool.query('SELECT author_id FROM posts WHERE id = $1', [postId]);
+    const { rows } = await pool.query<Record<string, unknown>>('SELECT author_id FROM posts WHERE id = $1', [postId]);
     if (!rows[0]) return notFound('Post not found');
     if (Number(rows[0].author_id) !== userId) return unauthorized('Not your post');
 
@@ -72,7 +72,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (sets.length === 0) return badRequest('Nothing to update');
 
     values.push(postId);
-    await pool.query(`UPDATE posts SET ${sets.join(', ')} WHERE id = $${idx}`, values);
+    await pool.query<Record<string, unknown>>(`UPDATE posts SET ${sets.join(', ')} WHERE id = $${idx}`, values);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -90,7 +90,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     const postId = Number(id);
 
     // Verify ownership (or admin)
-    const { rows } = await pool.query('SELECT author_id FROM posts WHERE id = $1', [postId]);
+    const { rows } = await pool.query<Record<string, unknown>>('SELECT author_id FROM posts WHERE id = $1', [postId]);
     if (!rows[0]) return notFound('Post not found');
 
     const user = await userRepo.findById(userId);
@@ -98,7 +98,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return unauthorized('Not your post');
     }
 
-    await pool.query('DELETE FROM posts WHERE id = $1', [postId]);
+    await pool.query<Record<string, unknown>>('DELETE FROM posts WHERE id = $1', [postId]);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';

@@ -1,158 +1,188 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { NewsCard } from '@/src/components/news/news-card';
+import { PostCard } from '@/src/components/post/post-card';
 import { FeedList } from '@/src/components/feed-list';
-import { PostCreateModal } from '@/src/components/post/post-create-modal';
-import { NewsSection } from '@/src/components/news/news-section';
-import { PinnedPosts } from '@/src/components/feed/pinned-posts';
-import { AnnouncementBanner } from '@/src/components/feed/announcement-banner';
-import { PopularTags } from '@/src/components/tags/popular-tags';
-import { HotDiscussions } from '@/src/components/feed/hot-discussions';
-import { WhoToFollow } from '@/src/components/feed/who-to-follow';
-import { CommunityInfo } from '@/src/components/feed/community-info';
-import { FabCreate } from '@/src/components/post/fab-create';
 import { useAuth } from '@/src/components/providers/auth-context';
 import { useI18n } from '@/src/lib/i18n/context';
-import { useState } from 'react';
-import Link from 'next/link';
 
-type FeedSort = 'top12h' | 'new' | 'top';
-type PostTypeFilter = '' | 'QA' | 'TIP' | 'GENERAL';
+type FeedItem = {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  score: number;
+  commentCount: number;
+  regionId: string | null;
+  createdAt: string;
+  authorId: number;
+  authorDisplayName: string;
+};
 
-const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
-  { value: 'top12h', label: 'Hot' },
-  { value: 'new', label: 'New' },
-  { value: 'top', label: 'Top' },
-];
+type RegionHeadline = { id: number; title: string };
+type RegionSummary = {
+  regionId: string;
+  slug: string;
+  name: string;
+  posts: RegionHeadline[];
+};
 
-const TYPE_FILTERS: { value: PostTypeFilter; label: string }[] = [
-  { value: '', label: 'All' },
-  { value: 'QA', label: 'Q&A' },
-  { value: 'TIP', label: 'Tips' },
-  { value: 'GENERAL', label: 'General' },
-];
+type NewsItem = {
+  id: number;
+  title: string;
+  summary: string | null;
+  url: string;
+  source: string;
+  publishedAt: string;
+  tags: string[];
+};
+
+type LandingData = {
+  usaPosts: FeedItem[];
+  regionPosts: RegionSummary[];
+  news: NewsItem[];
+};
+
+const REGION_ORDER = ['NE', 'S', 'MW', 'W'];
+const REGION_LABELS: Record<string, string> = {
+  NE: 'Northeast',
+  S: 'South',
+  MW: 'Midwest',
+  W: 'West',
+};
 
 export default function Home() {
   const { user } = useAuth();
   const { t } = useI18n();
-  const [showCreate, setShowCreate] = useState(false);
-  const [tab, setTab] = useState<'usa' | 'following'>('usa');
-  const [sort, setSort] = useState<FeedSort>('top12h');
-  const [typeFilter, setTypeFilter] = useState<PostTypeFilter>('');
+  const [data, setData] = useState<LandingData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const feedEndpoint = typeFilter
-    ? `/api/feed/usa?sort=${sort}&type=${typeFilter}&limit=30`
-    : `/api/feed/usa?sort=${sort}&limit=30`;
+  useEffect(() => {
+    fetch('/api/feed/landing')
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('feed.title')}</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/trending"
-            className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
-          >
-            {t('feed.trending')}
+    <main className="mx-auto max-w-5xl px-4 py-8 space-y-8">
+      {/* Card 1: US Feed */}
+      <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+        <div className="mb-4 flex items-center justify-between">
+          <Link href="/feed/usa" className="text-xl font-bold hover:underline">
+            {t('landing.usFeed')}
           </Link>
-          {user && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="rounded-lg bg-foreground px-4 py-2 text-sm text-background"
-            >
-              {t('feed.newPost')}
-            </button>
-          )}
+          <Link
+            href="/feed/usa"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {t('landing.viewAll')}
+          </Link>
         </div>
-      </div>
 
-      <div className="flex gap-6">
-        {/* Main content */}
-        <div className="min-w-0 flex-1">
-          {/* Feed tabs */}
-          <div className="mb-4 flex items-center justify-between border-b dark:border-gray-700">
-            <div className="flex">
-              <button
-                onClick={() => setTab('usa')}
-                className={`px-4 py-2 text-sm font-medium ${tab === 'usa' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
-              >
-                {t('feed.usaFeed')}
-              </button>
-              {user && (
-                <button
-                  onClick={() => setTab('following')}
-                  className={`px-4 py-2 text-sm font-medium ${tab === 'following' ? 'border-b-2 border-foreground' : 'text-gray-500'}`}
-                >
-                  {t('feed.following')}
-                </button>
-              )}
-            </div>
+        {loading && (
+          <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        )}
 
-            {/* Sort controls */}
-            {tab === 'usa' && (
-              <div className="flex gap-1 pb-2">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSort(opt.value)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      sort === opt.value
-                        ? 'bg-foreground text-background'
-                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Type filter */}
-          {tab === 'usa' && (
-            <div className="mb-4 flex gap-2">
-              {TYPE_FILTERS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTypeFilter(opt.value)}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                    typeFilter === opt.value
-                      ? 'bg-gray-200 dark:bg-gray-700'
-                      : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  {opt.label}
-                </button>
+        {data && data.news.length > 0 && (
+          <div className="mb-6">
+            <h3 className="mb-3 text-sm font-semibold uppercase text-gray-500">
+              {t('landing.news')}
+            </h3>
+            <div className="space-y-3">
+              {data.news.map((item) => (
+                <NewsCard key={item.id} {...item} publishedAt={item.publishedAt} />
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {tab === 'usa' && (
-            <>
-              <AnnouncementBanner />
-              <PinnedPosts />
-              <div className="mb-6">
-                <NewsSection />
-              </div>
-              <FeedList endpoint={feedEndpoint} />
-            </>
-          )}
+        {data && data.usaPosts.length > 0 && (
+          <div>
+            <h3 className="mb-3 text-sm font-semibold uppercase text-gray-500">
+              {t('landing.topPosts')}
+            </h3>
+            <div className="grid gap-3">
+              {data.usaPosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  id={post.id}
+                  title={post.title}
+                  body={post.body}
+                  type={post.type}
+                  score={post.score}
+                  commentCount={post.commentCount}
+                  regionId={post.regionId}
+                  createdAt={post.createdAt}
+                  authorId={post.authorId}
+                  authorDisplayName={post.authorDisplayName}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
-          {tab === 'following' && (
-            <FeedList endpoint="/api/feed/following?limit=30" />
-          )}
-        </div>
+      {/* Card 2: By Region */}
+      <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+        <h2 className="mb-4 text-xl font-bold">{t('landing.byRegion')}</h2>
 
-        {/* Sidebar - hidden on mobile */}
-        <aside className="hidden w-64 shrink-0 space-y-4 lg:block">
-          <CommunityInfo />
-          <PopularTags />
-          <WhoToFollow />
-          <HotDiscussions />
-        </aside>
-      </div>
+        {loading && (
+          <p className="text-sm text-gray-500">{t('common.loading')}</p>
+        )}
 
-      <FabCreate onClick={() => setShowCreate(true)} />
-      {showCreate && <PostCreateModal onClose={() => setShowCreate(false)} />}
+        {data && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {REGION_ORDER.map((regionId) => {
+              const region = data.regionPosts.find(
+                (r) => r.regionId === regionId,
+              );
+              const slug = region?.slug ?? regionId.toLowerCase();
+              const name = region?.name ?? REGION_LABELS[regionId] ?? regionId;
+              return (
+                <div
+                  key={regionId}
+                  className="rounded-lg border border-gray-100 p-4 dark:border-gray-800"
+                >
+                  <Link
+                    href={`/groups/${slug}`}
+                    className="mb-2 block text-sm font-semibold hover:text-blue-600"
+                  >
+                    {name}
+                  </Link>
+                  {region && region.posts.length > 0 ? (
+                    <ul className="space-y-1">
+                      {region.posts.map((post) => (
+                        <li key={post.id}>
+                          <Link
+                            href={`/posts/${post.id}`}
+                            className="block truncate text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
+                          >
+                            {post.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-gray-400">No recent posts</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Card 3: Personal Feed (signed-in only) */}
+      {user && (
+        <section className="rounded-lg border border-gray-200 p-6 dark:border-gray-800">
+          <h2 className="mb-4 text-xl font-bold">{t('landing.yourFeed')}</h2>
+          <FeedList endpoint="/api/feed/personal?limit=20" />
+        </section>
+      )}
     </main>
   );
 }

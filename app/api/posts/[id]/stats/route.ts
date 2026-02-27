@@ -12,12 +12,12 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const postId = Number(id);
 
     // Verify ownership
-    const { rows: postRows } = await pool.query(
+    const { rows: postRows } = await pool.query<Record<string, unknown>>(
       'SELECT author_id FROM posts WHERE id = $1',
       [postId],
     );
     if (postRows.length === 0) return badRequest('Post not found');
-    if (Number((postRows[0] as Record<string, unknown>).author_id) !== userId) {
+    if (Number(postRows[0].author_id) !== userId) {
       return forbidden('You can only view stats for your own posts');
     }
 
@@ -39,10 +39,10 @@ export async function GET(_request: NextRequest, { params }: Params) {
       WHERE p.id = $1
     `;
 
-    const { rows } = await pool.query(sql, [postId]);
+    const { rows } = await pool.query<Record<string, unknown>>(sql, [postId]);
     if (rows.length === 0) return badRequest('Stats not available');
 
-    const r = rows[0] as Record<string, unknown>;
+    const r = rows[0];
     return NextResponse.json({
       createdAt: String(r.created_at),
       voteCount: Number(r.vote_count),

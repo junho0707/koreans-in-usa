@@ -40,11 +40,11 @@ export async function GET(request: NextRequest) {
       LIMIT $${idx}
     `;
 
-    const { rows } = await pool.query(sql, values);
+    const { rows } = await pool.query<Record<string, unknown>>(sql, values);
     const hasMore = rows.length > limit;
     const resultRows = hasMore ? rows.slice(0, limit) : rows;
 
-    const items = resultRows.map((r: Record<string, unknown>) => ({
+    const items = resultRows.map((r) => ({
       id: Number(r.id),
       title: String(r.title),
       bodySnippet: String(r.body).slice(0, 150),

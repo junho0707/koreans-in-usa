@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (!postId) return badRequest('postId is required');
 
-    await pool.query('UPDATE posts SET is_pinned = $1 WHERE id = $2', [pin, postId]);
+    await pool.query<Record<string, unknown>>('UPDATE posts SET is_pinned = $1 WHERE id = $2', [pin, postId]);
     return NextResponse.json({ ok: true, pinned: pin });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed';

@@ -19,8 +19,8 @@ export async function GET() {
       LIMIT 5
     `;
 
-    const { rows } = await pool.query(sql);
-    const items = rows.map((r: Record<string, unknown>) => ({
+    const { rows } = await pool.query<Record<string, unknown>>(sql);
+    const items = rows.map((r) => ({
       id: Number(r.id),
       title: String(r.title),
       type: String(r.type),

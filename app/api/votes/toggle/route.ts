@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       try {
         const points = targetType === 'POST' ? REP_POINTS.POST_UPVOTED : REP_POINTS.COMMENT_UPVOTED;
         const table = targetType === 'POST' ? 'posts' : 'comments';
-        const { rows } = await pool.query(`SELECT author_id FROM ${table} WHERE id = $1`, [targetId]);
+        const { rows } = await pool.query<Record<string, unknown>>(`SELECT author_id FROM ${table} WHERE id = $1`, [targetId]);
         if (rows[0] && Number(rows[0].author_id) !== userId) {
           const delta = result.voted ? points : -points;
           await addReputation(Number(rows[0].author_id), delta);

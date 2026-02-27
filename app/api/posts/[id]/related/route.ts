@@ -43,9 +43,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
       LIMIT 5
     `;
 
-    const { rows } = await pool.query(sql, [postId]);
+    const { rows } = await pool.query<Record<string, unknown>>(sql, [postId]);
 
-    const items = rows.map((r: Record<string, unknown>) => ({
+    const items = rows.map((r) => ({
       id: Number(r.id),
       title: String(r.title),
       type: String(r.type),

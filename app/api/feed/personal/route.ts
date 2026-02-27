@@ -10,12 +10,43 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor') ? Number(searchParams.get('cursor')) : undefined;
     const limit = Math.min(Number(searchParams.get('limit')) || 20, 50);
 
-    const conditions = [
-      'p.is_hidden = FALSE',
-      'p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)',
-    ];
+    // Get user's interests to match against topic tags
+    const userResult = await pool.query<{ interests: string[] }>(
+      'SELECT interests FROM users WHERE id = $1',
+      [userId],
+    );
+    const interests: string[] = userResult.rows[0]?.interests ?? [];
+
+    const conditions: string[] = ['p.is_hidden = FALSE'];
     const values: unknown[] = [userId];
     let idx = 2;
+
+    // Build the UNION sources
+    // Source 1: posts from followed users
+    // Source 2: posts matching user's interest tags
+    let sourceSql: string;
+
+    if (interests.length > 0) {
+      // Find topic tag IDs matching user interests (case-insensitive)
+      values.push(interests.map((i) => i.toLowerCase()));
+      sourceSql = `
+        SELECT DISTINCT p.id FROM posts p
+        WHERE p.is_hidden = FALSE AND (
+          p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+          OR p.id IN (
+            SELECT ptt.post_id FROM post_topic_tags ptt
+            JOIN topic_tags tt ON tt.id = ptt.topic_tag_id
+            WHERE LOWER(tt.name) = ANY($${idx++})
+          )
+        )
+      `;
+    } else {
+      sourceSql = `
+        SELECT DISTINCT p.id FROM posts p
+        WHERE p.is_hidden = FALSE
+          AND p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+      `;
+    }
 
     if (cursor) {
       conditions.push(`p.id < $${idx++}`);
@@ -24,7 +55,12 @@ export async function GET(request: NextRequest) {
 
     values.push(limit + 1);
 
+    const cursorCondition = cursor ? `AND sub.id < $${idx - 2}` : '';
+
     const sql = `
+      WITH candidate_ids AS (
+        ${sourceSql}
+      )
       SELECT
         p.id, p.title, p.body, p.type,
         p.author_id, u.display_name AS author_display_name,
@@ -33,10 +69,11 @@ export async function GET(request: NextRequest) {
         COALESCE(vs.score, 0)::int AS score,
         COALESCE(cc.cnt, 0)::int AS comment_count
       FROM posts p
+      JOIN candidate_ids c ON c.id = p.id
       JOIN users u ON u.id = p.author_id
       LEFT JOIN (SELECT target_id, COUNT(*)::int AS score FROM votes WHERE target_type = 'POST' GROUP BY target_id) vs ON vs.target_id = p.id
       LEFT JOIN (SELECT post_id, COUNT(*)::int AS cnt FROM comments GROUP BY post_id) cc ON cc.post_id = p.id
-      WHERE ${conditions.join(' AND ')}
+      ${cursor ? `WHERE p.id < $${idx - 2}` : ''}
       ORDER BY p.created_at DESC, p.id DESC
       LIMIT $${idx}
     `;

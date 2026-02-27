@@ -1,4 +1,9 @@
 import { FeedRepository } from '@/src/application/ports/feed-repository';
+import {
+  LandingSummary,
+  NewsItemSummary,
+  RegionSummary,
+} from '@/src/application/dto/landing-summary';
 import { FeedItem } from '@/src/domain/entities/feed-item';
 import { FeedFilters, FeedPage, normalizeLimit } from '@/src/domain/feed';
 import {
@@ -106,8 +111,8 @@ export class PgFeedRepository implements FeedRepository {
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const orderBy =
       sort === 'new'
-        ? 'ORDER BY f.created_at DESC, f.id DESC'
-        : 'ORDER BY f.score DESC, f.created_at DESC, f.id DESC';
+        ? 'ORDER BY p.created_at DESC, p.id DESC'
+        : 'ORDER BY score DESC, p.created_at DESC, p.id DESC';
 
     queryValues.push(limit + 1);
 
@@ -134,9 +139,9 @@ export class PgFeedRepository implements FeedRepository {
         WHERE p.scope_region = TRUE AND p.region_id IS NOT NULL
       ),
       candidate_ids AS (
-        SELECT id FROM recent_posts WHERE scope_usa = TRUE AND is_hidden = FALSE
+        SELECT rp.id FROM recent_posts rp WHERE rp.scope_usa = TRUE AND rp.is_hidden = FALSE
         UNION
-        SELECT id FROM region_ranked rr JOIN recent_posts rp ON rp.id = rr.id WHERE region_rank <= 3 AND rp.is_hidden = FALSE
+        SELECT rr.id FROM region_ranked rr JOIN recent_posts rp ON rp.id = rr.id WHERE region_rank <= 3 AND rp.is_hidden = FALSE
       )
       SELECT p.id,
              p.title,
@@ -271,5 +276,86 @@ export class PgFeedRepository implements FeedRepository {
       })),
       sort,
     );
+  }
+
+  async getLandingSummary(): Promise<LandingSummary> {
+    const usaPostsSql = `
+      WITH post_scores AS (
+        SELECT target_id, COUNT(*)::int AS score
+        FROM votes WHERE target_type = 'POST' GROUP BY target_id
+      )
+      SELECT p.id, p.title, p.body, p.type,
+             p.author_id, u.display_name AS author_display_name,
+             p.created_at, p.region_id, p.state_code, p.metro_area,
+             p.scope_usa, p.scope_region,
+             COALESCE(ps.score, 0)::int AS score,
+             (SELECT COUNT(*) FROM comments cm WHERE cm.post_id = p.id)::int AS comment_count
+      FROM posts p
+      LEFT JOIN users u ON u.id = p.author_id
+      LEFT JOIN post_scores ps ON ps.target_id = p.id
+      WHERE p.is_hidden = FALSE
+        AND p.type IN ('QA', 'TIP')
+        AND p.created_at >= NOW() - INTERVAL '7 days'
+      ORDER BY COALESCE(ps.score, 0) DESC, p.created_at DESC
+      LIMIT 5
+    `;
+
+    const regionPostsSql = `
+      SELECT r.id AS region_id, r.slug, r.name, p.id AS post_id, p.title,
+             ROW_NUMBER() OVER (PARTITION BY r.id ORDER BY p.created_at DESC) AS rn
+      FROM posts p
+      JOIN regions r ON r.id = p.region_id
+      WHERE p.is_hidden = FALSE
+        AND p.scope_region = TRUE
+        AND p.created_at >= NOW() - INTERVAL '7 days'
+    `;
+
+    const newsSql = `
+      SELECT id, title, summary, url, source, published_at, tags
+      FROM news_items
+      ORDER BY published_at DESC
+      LIMIT 3
+    `;
+
+    const [usaResult, regionResult, newsResult] = await Promise.all([
+      pool.query(usaPostsSql),
+      pool.query(regionPostsSql),
+      pool.query(newsSql),
+    ]);
+
+    const usaPosts: FeedItem[] = usaResult.rows.map((r: FeedRow) => toFeedItem(r));
+
+    const regionMap = new Map<string, RegionSummary>();
+    for (const r of regionResult.rows) {
+      if (Number(r.rn) > 3) continue;
+      const key = String(r.region_id);
+      if (!regionMap.has(key)) {
+        regionMap.set(key, {
+          regionId: key,
+          slug: String(r.slug),
+          name: String(r.name),
+          posts: [],
+        });
+      }
+      regionMap.get(key)!.posts.push({
+        id: Number(r.post_id),
+        title: String(r.title),
+      });
+    }
+    const regionPosts: RegionSummary[] = Array.from(regionMap.values());
+
+    const news: NewsItemSummary[] = newsResult.rows.map(
+      (r: Record<string, unknown>) => ({
+        id: Number(r.id),
+        title: String(r.title),
+        summary: r.summary ? String(r.summary) : null,
+        url: String(r.url),
+        source: String(r.source),
+        publishedAt: String(r.published_at),
+        tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+      }),
+    );
+
+    return { usaPosts, regionPosts, news };
   }
 }

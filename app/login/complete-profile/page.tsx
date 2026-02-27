@@ -54,7 +54,10 @@ export default function CompleteProfilePage() {
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.toLowerCase() }),
+        body: JSON.stringify({
+          username: username.toLowerCase(),
+          displayName: username.toLowerCase(),
+        }),
       });
 
       if (res.ok) {

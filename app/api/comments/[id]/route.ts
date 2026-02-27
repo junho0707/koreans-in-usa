@@ -15,7 +15,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const commentId = Number(id);
 
-    const { rows } = await pool.query('SELECT author_id FROM comments WHERE id = $1', [commentId]);
+    const { rows } = await pool.query<{ author_id: number }>('SELECT author_id FROM comments WHERE id = $1', [commentId]);
     if (!rows[0]) return notFound('Comment not found');
     if (Number(rows[0].author_id) !== userId) return unauthorized('Not your comment');
 
@@ -38,7 +38,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const commentId = Number(id);
 
-    const { rows } = await pool.query('SELECT author_id FROM comments WHERE id = $1', [commentId]);
+    const { rows } = await pool.query<{ author_id: number }>('SELECT author_id FROM comments WHERE id = $1', [commentId]);
     if (!rows[0]) return notFound('Comment not found');
 
     const user = await userRepo.findById(userId);

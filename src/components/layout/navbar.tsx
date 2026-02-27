@@ -14,7 +14,7 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const NAV_LINKS = [
-    { href: '/', label: t('nav.usaFeed') },
+    { href: '/', label: t('nav.home') },
     { href: '/groups/northeast', label: t('nav.northeast') },
     { href: '/groups/south', label: t('nav.south') },
     { href: '/groups/midwest', label: t('nav.midwest') },
@@ -78,6 +78,12 @@ export function Navbar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-gray-600 hover:text-foreground dark:text-gray-400"
+              >
+                {t('nav.signOut')}
+              </button>
             </div>
           ) : (
             <Link
@@ -133,6 +139,12 @@ export function Navbar() {
                 <Link href="/settings" className="block py-2 text-sm text-gray-600 dark:text-gray-400" onClick={() => setMenuOpen(false)}>
                   Settings
                 </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full py-2 text-left text-sm text-gray-600 dark:text-gray-400"
+                >
+                  {t('nav.signOut')}
+                </button>
               </>
             ) : (
               <Link href="/login" className="block py-2 text-sm font-medium" onClick={() => setMenuOpen(false)}>

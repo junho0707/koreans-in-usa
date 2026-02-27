@@ -3,6 +3,7 @@ export type Locale = 'en' | 'ko';
 const translations = {
   en: {
     // Nav
+    'nav.home': 'Home',
     'nav.usaFeed': 'USA Feed',
     'nav.northeast': 'Northeast',
     'nav.south': 'South',
@@ -13,6 +14,14 @@ const translations = {
     'nav.saved': 'Saved',
     'nav.signIn': 'Sign In',
     'nav.signOut': 'Sign Out',
+
+    // Landing
+    'landing.usFeed': 'US Feed',
+    'landing.byRegion': 'By Region',
+    'landing.yourFeed': 'Your Feed',
+    'landing.news': 'News',
+    'landing.topPosts': 'Top Posts',
+    'landing.viewAll': 'View all',
 
     // Feed
     'feed.title': 'Feed',
@@ -74,6 +83,7 @@ const translations = {
   },
   ko: {
     // Nav
+    'nav.home': '홈',
     'nav.usaFeed': '미국 피드',
     'nav.northeast': '북동부',
     'nav.south': '남부',
@@ -84,6 +94,14 @@ const translations = {
     'nav.saved': '저장됨',
     'nav.signIn': '로그인',
     'nav.signOut': '로그아웃',
+
+    // Landing
+    'landing.usFeed': '미국 피드',
+    'landing.byRegion': '지역별',
+    'landing.yourFeed': '내 피드',
+    'landing.news': '뉴스',
+    'landing.topPosts': '인기 게시물',
+    'landing.viewAll': '전체 보기',
 
     // Feed
     'feed.title': '피드',
